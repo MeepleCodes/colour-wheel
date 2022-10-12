@@ -11,3 +11,35 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+div#root {
+  display: flex;
+  flex-wrap: wrap;
+}
+.wheelbox {
+  display: inline-block;
+  width: 310px;
+  height: 440px;
+  border: 1px solid black;
+  margin: 5px;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+}
+.wheelbox h1, .wheelbox h2 {
+  margin: 0;
+}
+.wheelbox h1 {
+  font-size: 16pt;
+}
+.wheelbox h2 {
+  font-size: 12pt;
+  font-style: italic;
+}
+.wheelbox p {
+  font-size: 10pt;
+  color: rgba(0, 0, 0, 0.92);
+  margin: 0;
+}
+.wheelbox div.spacer {
+  flex: 5;
+}

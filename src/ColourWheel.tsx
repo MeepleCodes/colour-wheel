@@ -1,5 +1,5 @@
 import React from 'react';
-import { ColourModel, JChModel, ModelResult } from './ColourModels';
+import { ColourModel, JChModel } from './ColourModels';
 
 export type ColourWheelProps = {
   size?: number;

@@ -2,6 +2,7 @@ import * as convert from "color-convert";
 import * as calculus from "color-calculus";
 import { RGB } from "color-convert/conversions";
 
+const USE_ELIPTICAL_PROJECTION = true;
 
 /**
  * Perform the most common scaling of the A/B parameters for a model, using
@@ -74,7 +75,7 @@ function rayProject(angle: number): {x: number, y: number} {
     var tanAngle = Math.tan((angle % 0.25) * Math.PI * 2);
     // Can't represent Pi/2 in floating point so the highest we get is +largenumber
     var u = Math.min(1, tanAngle);
-    var v = tanAngle == 0 ? 1 : Math.min(1, 1/tanAngle);
+    var v = (tanAngle === 0) ? 1 : Math.min(1, 1/tanAngle);
     var x: number, y: number;
     if(angle < 0.25) {
       x = u;
@@ -201,9 +202,9 @@ export const LABModel: ColourModel = {
     aLabel: "Lightness",
     bLabel: null,
     generateRGB: (angle: number, distance: number, aMin: number, aMax: number, bMin: number, bMax: number) => {
-        var {a: l} = scaleAB(distance, aMin, aMax, bMin, bMax);
+        let {a: l} = scaleAB(distance, aMin, aMax, bMin, bMax);
         // Could make this swappable but they seem to generate the exact same output
-        var {x: x, y: y} = elipticalDiscProject(angle);
+        let {x, y} = USE_ELIPTICAL_PROJECTION ? elipticalDiscProject(angle) : rayProject(angle);
         // Invert x/y as that ends up with us closely matching hue angle from every other model
         return rgbToResult(calculus.lab_to_sRGB(l, y * 100, x * 100));
     }
@@ -216,8 +217,8 @@ export const HCLModel: ColourModel = {
     aLabel: "Chroma",
     bLabel: "Lightness",
     generateRGB: (angle: number, distance: number, aMin: number, aMax: number, bMin: number, bMax: number) => {
-        var h = angle * 360;
-        var {a: c, b: l} = scaleAB(distance, aMin, aMax, bMin, bMax);
+        let h = angle * 360;
+        let {a: c, b: l} = scaleAB(distance, aMin, aMax, bMin, bMax);
         return rgbToResult(calculus.hcl_to_sRGB(h, c, l));
     }
 }

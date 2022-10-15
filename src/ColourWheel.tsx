@@ -1,5 +1,5 @@
 import React from 'react';
-import { ColourModel, JChModel } from './ColourModels';
+import { ColourModel, JChModel, ModelDefaults, getModelDefaults, DefaultDefaults } from './ColourModels';
 
 export type ColourWheelProps = {
   size?: number;
@@ -26,8 +26,6 @@ export class ColourWheel extends React.Component<ColourWheelProps> {
     const ctx = canvas.getContext("2d");
     if(!ctx) return;
     // ctx.reset();
-    console.log("Redrawing canvas");
-    console.trace();
     this.redrawCanvas(ctx);
   }
   componentDidUpdate(prevProps: Readonly<ColourWheelProps>, prevState: Readonly<{}>, snapshot?: any): void {
@@ -38,20 +36,28 @@ export class ColourWheel extends React.Component<ColourWheelProps> {
     this.redrawCanvas(ctx);
   }
   redrawCanvas(ctx: CanvasRenderingContext2D): void {
+    // If the model has any "aMinimumDefault" etc properties, extract then and insert them into the properties chain
+    // We take settings in order from props > model defaults > hardcoded defaults
+    const modelDefaults: ModelDefaults = getModelDefaults(this.props.model);
     const {
       size = DEFAULT_SIZE,
       slices = 60,
       rings = 10,
       model = JChModel,
-      aMin = 0,
-      aMax = 100,
-      bMin = 0,
-      bMax = 100
-    } = this.props;
+      aMin,
+      aMax,
+      bMin,
+      bMax
+    } = {...DefaultDefaults, ...modelDefaults, ...this.props};
+    console.log(`Rendered ${model.name} with aMin/Max ${aMin}/${aMax} and bMin/Max ${bMin}/${bMax}`);
     ctx.resetTransform();
     ctx.clearRect(0, 0, size, size);
     ctx.translate(size/2, size/2);
+    // Flip the canvas to make +ve y towards the top of the screen
     ctx.scale(1, -1);
+    // By default, 0 degrees ends up facing ----->
+    // But that's red on most colour wheels and we prefer yellow (usually around 300 degrees) up
+    // So counterrotate the canvas by 30 degrees to make yellow up
     ctx.rotate(Math.PI/6);
     const sliceAngle = 360 / slices;
     const radius = size/2;

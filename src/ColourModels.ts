@@ -96,6 +96,10 @@ function rayProject(angle: number): {x: number, y: number} {
     };
   }
 
+function noProjection(angle: number): {x: number, y: number} {
+    return {x: Math.sin(angle * Math.PI * 2), y: Math.cos(angle * Math.PI * 2)};
+}
+
 
 export type ModelResult = {
     inGamut: boolean;
@@ -114,7 +118,41 @@ export interface ColourModel {
     bMaxDefault?: number;
     generateRGB: (angle: number, distance: number, aMin: number, aMax: number, bMin: number, bMax: number) => ModelResult;
 }
-  
+
+/**
+ * The default values for a/b min/max if a model doesn't override them
+ */
+export const DefaultDefaults: ModelDefaults = {
+    aMin: 0,
+    aMax: 100,
+    bMin: 0,
+    bMax: 100
+};
+
+export type ModelDefaults  = {
+    // [Property in keyof ColourModel as `${string(keyof Property).replace(/Default$/,"")}`]?: ColourModel[Property];
+    // [Property in keyof ColourModel as `${Property}NoReally`]?: ColourModel[Property];
+    aMin: number;
+    aMax: number;
+    bMin: number;
+    bMax: number;
+}
+
+/**
+ * Get the default values from a model as a set of current values, ie for each of
+ * [a|b][Min|Max]Default properties present on the model, return an object with
+ * [a|b][MinMax] = <default>. For any values not defined by the model, return the
+ * fallback defaults.
+ * 
+ * Use object assignment or spread to inject these into the default values
+ * 
+ * @param model Model to fetch defaults from
+ * @returns 
+ */
+export function getModelDefaults(model?: ColourModel) : ModelDefaults {
+    return {...DefaultDefaults, ...Object.fromEntries(Object.entries(model || {}).filter(([k, v]) => k.endsWith("Default")).map(([k, v]) => ([k.replace(/Default$/, ""), v])))};
+}
+
 export const HSLModel: ColourModel = {
     code: "HSL",
     name: "Hue/Saturation/Lightness",
@@ -172,12 +210,14 @@ export const HWBModel: ColourModel = {
     aLabel: "White",
     bLabel: "Black",
     aMaxDefault: 0,
+    bMinDefault: 100,
+    bMaxDefault: 0,
     generateRGB: (angle: number, distance: number, aMin: number, aMax: number, bMin: number, bMax: number) => {
         var h = angle * 360;
-        var {a: s, b: v} = scaleAB(distance, aMin, aMax, bMin, bMax);
+        var {a: w, b} = scaleAB(distance, aMin, aMax, bMin, bMax);
         return {
             inGamut: true,
-            sRGB: "#" + convert.hsv.hex([h, s, v])
+            sRGB: "#" + convert.hwb.hex([h, w, b])
         };
     }
 }
@@ -195,18 +235,35 @@ export const JChModel: ColourModel = {
     }
 }
 
-export const LABModel: ColourModel = {
-    code: "LAB",
-    name: "CIELAB",
+export const LABProjectedModel: ColourModel = {
+    code: "LAB-PROJ",
+    name: "CIELAB Projected",
     description: "CIELAB (lightness, a, b) using NPM color-calculus module. A* and B* are mapped onto the circle using an eliptical-disc projection - so 45° is (1,1) and not (⅟√2,⅟√2), etc.",
     aLabel: "Lightness",
-    bLabel: null,
+    bLabel: "A*B* scale",
+    bMinDefault: 100,
     generateRGB: (angle: number, distance: number, aMin: number, aMax: number, bMin: number, bMax: number) => {
-        let {a: l} = scaleAB(distance, aMin, aMax, bMin, bMax);
+        let {a: l, b: scale} = scaleAB(distance, aMin, aMax, bMin, bMax);
         // Could make this swappable but they seem to generate the exact same output
         let {x, y} = USE_ELIPTICAL_PROJECTION ? elipticalDiscProject(angle) : rayProject(angle);
         // Invert x/y as that ends up with us closely matching hue angle from every other model
-        return rgbToResult(calculus.lab_to_sRGB(l, y * 100, x * 100));
+        return rgbToResult(calculus.lab_to_sRGB(l, y * scale, x * scale));
+    }
+}
+
+export const LABModel: ColourModel = {
+    code: "LAB",
+    name: "CIELAB",
+    description: "CIELAB (lightness, a, b) using NPM color-calculus module. A* and B* are left in cartesian coordinates so only reach their maximum values along the axes.",
+    aLabel: "Lightness",
+    bLabel: "A*B* scale",
+    bMinDefault: 100,
+    generateRGB: (angle: number, distance: number, aMin: number, aMax: number, bMin: number, bMax: number) => {
+        let {a: l, b: scale} = scaleAB(distance, aMin, aMax, bMin, bMax);
+        let {x, y} = noProjection(angle);
+        // Invert x/y as that ends up with us closely matching hue angle from every other model
+        // Scale x/y up so 45 degrees is 1,1 and along the axes is >1, 0 or 0, >1
+        return rgbToResult(calculus.lab_to_sRGB(l, y * scale * Math.SQRT2, x * scale * Math.SQRT2));
     }
 }
 
@@ -223,8 +280,11 @@ export const HCLModel: ColourModel = {
     }
 }
 
-export const ALL_MODELS = [HSLModel, HSVModel, HCVModel, HWBModel, JChModel, LABModel, HCLModel/*, JChAltModel*/];
-
+export const ALL_MODELS = [HSLModel, HSVModel, HCVModel, HWBModel, JChModel, LABModel, LABProjectedModel, HCLModel/*, JChAltModel*/];
+export function getModelFromCode(code: string): ColourModel | null {
+    for(var m of ALL_MODELS) if(m.code === code) return m;
+    return null;
+}
 // Currently not using this as the ciebase-ts and ciecam02-ts modules don't pack under webpack5 without
 // config changes and I can't be bothered to eject react-create-app just yet. They don't really achieve much so we're
 // fine without them for the time being

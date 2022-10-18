@@ -1,5 +1,5 @@
 import React from 'react';
-import { ColourModel, JChModel, ModelDefaults, getModelDefaults, DefaultDefaults } from './ColourModels';
+import { ColourModel, JChModel, getModelDefaults, DefaultDefaults, RadialScaling } from './ColourModels';
 
 export type ColourWheelProps = {
   size?: number;
@@ -38,7 +38,7 @@ export class ColourWheel extends React.Component<ColourWheelProps> {
   redrawCanvas(ctx: CanvasRenderingContext2D): void {
     // If the model has any "aMinimumDefault" etc properties, extract then and insert them into the properties chain
     // We take settings in order from props > model defaults > hardcoded defaults
-    const modelDefaults: ModelDefaults = getModelDefaults(this.props.model);
+    const modelDefaults: RadialScaling = getModelDefaults(this.props.model);
     const {
       size = DEFAULT_SIZE,
       slices = 60,
@@ -49,17 +49,14 @@ export class ColourWheel extends React.Component<ColourWheelProps> {
       bMin,
       bMax
     } = {...DefaultDefaults, ...modelDefaults, ...this.props};
+    const scaling: RadialScaling = {aMin: aMin, aMax: aMax, bMin: bMin, bMax: bMax};
     console.log(`Rendered ${model.name} with aMin/Max ${aMin}/${aMax} and bMin/Max ${bMin}/${bMax}`);
     ctx.resetTransform();
     ctx.clearRect(0, 0, size, size);
     ctx.translate(size/2, size/2);
     // Flip the canvas to make +ve y towards the top of the screen
     ctx.scale(1, -1);
-    // By default, 0 degrees ends up facing ----->
-    // But that's red on most colour wheels and we prefer yellow (usually around 300 degrees) up
-    // So counterrotate the canvas by 30 degrees to make yellow up
-    ctx.rotate(Math.PI/6);
-    const sliceAngle = 360 / slices;
+    const sliceAngle = Math.PI * 2 / slices;
     const radius = size/2;
     const ringRadius = radius/rings;
 
@@ -70,14 +67,13 @@ export class ColourWheel extends React.Component<ColourWheelProps> {
       // Whether we were previously in-gamut in this slice, or null if unknown (ie first ring)
       var sliceInGamut: boolean | null = null;
       for(var ring=0; ring < rings; ring++) {
-        
-        var startAngle = (((slice - 0.5) * sliceAngle) * Math.PI / 180) - angleOverlap;
-        var endAngle = (((slice + 0.5) * sliceAngle) * Math.PI / 180) + angleOverlap;
+        var startAngle = ((slice - 0.5) * sliceAngle) - angleOverlap;
+        var endAngle = ((slice + 0.5) * sliceAngle) + angleOverlap;
         var startRadius = Math.max(0, ring * ringRadius - radiusOverlap);
         var endRadius = (ring + 1) * ringRadius;
         
         // Angle goes [0, 1) but distance goes (0, 1] because we always want to at least draw the maximum chroma/brightness/value at the outside
-        var result = model.generateRGB(slice/slices, (ring + 1)/rings, aMin, aMax, bMin, bMax)
+        var result = model.generateRGB(slice/slices, (ring + 1)/rings, scaling);
         ctx.fillStyle = result.sRGB;
         
         ctx.beginPath();

@@ -5,13 +5,20 @@ import CardMedia from '@mui/material/CardMedia';
 import CardContent from '@mui/material/CardContent';
 
 import { ColourWheel } from './ColourWheel';
-import { ALL_MODELS, ColourModel, getModelDefaults, getModelFromCode, HSLModel } from './ColourModels';
+import { ALL_MODELS, ColourModel, getModelDefaults, getModelFromCode, HSLModel, RadialScaling } from './ColourModels';
 import FormControl from '@mui/material/FormControl';
 import FormLabel from '@mui/material/FormLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import Slider from '@mui/material/Slider';
 import Typography from '@mui/material/Typography';
+/**
+ * Current state of the wheel viewer.
+ * 
+ * I'd like to define this as {model: ..., rings: ..., slices: ...} & RadialScaling
+ * but that breaks the key detection in the generic typing of of setState(), despite
+ * the resultant types being identical as far as I can tell.
+ */
 type ViewerState = {
     model: ColourModel,
     rings: number,

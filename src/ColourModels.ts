@@ -5,20 +5,16 @@ import { RGB } from "color-convert/conversions";
 const USE_ELIPTICAL_PROJECTION = true;
 
 /**
- * Perform the most common scaling of the A/B parameters for a model, using
- * a/b Min/Max parameters.
+ * Perform the most common radial scaling: two parameters scaled linearly by a/b/min/max.
  * 
  * @param distance Distance, range 0-1
- * @param aMin 
- * @param aMax 
- * @param bMin 
- * @param bMax 
+ * @param scaling Model's radial scaling parameters
  * @returns 
  */
-function scaleAB(distance: number, aMin: number, aMax: number, bMin: number, bMax: number): {a: number, b: number} {
+function scaleAB(distance: number, scaling: RadialScaling): {a: number, b: number} {
     return {
-        a: aMin + (aMax - aMin) * distance,
-        b: bMin + (bMax - bMin) * distance
+        a: scaling.aMin + (scaling.aMax - scaling.aMin) * distance,
+        b: scaling.bMin + (scaling.bMax - scaling.bMin) * distance
     }
 }
 /**
@@ -112,31 +108,30 @@ export interface ColourModel {
     description: string;
     aLabel: string;
     bLabel: string | null;
-    aMinDefault?: number;
-    aMaxDefault?: number;
-    bMinDefault?: number;
-    bMaxDefault?: number;
-    generateRGB: (angle: number, distance: number, aMin: number, aMax: number, bMin: number, bMax: number) => ModelResult;
+    scaleDefaults?: RadialScalingOpt;
+    generateRGB: (angle: number, distance: number, scaling: RadialScaling) => ModelResult;
+}
+
+export type RadialScaling = {
+    aMin: number;
+    aMax: number;
+    bMin: number;
+    bMax: number;    
+}
+export type RadialScalingOpt = {
+    [k in keyof RadialScaling]?: RadialScaling[k];
 }
 
 /**
  * The default values for a/b min/max if a model doesn't override them
  */
-export const DefaultDefaults: ModelDefaults = {
+ export const DefaultDefaults: RadialScaling = {
     aMin: 0,
     aMax: 100,
     bMin: 0,
     bMax: 100
 };
 
-export type ModelDefaults  = {
-    // [Property in keyof ColourModel as `${string(keyof Property).replace(/Default$/,"")}`]?: ColourModel[Property];
-    // [Property in keyof ColourModel as `${Property}NoReally`]?: ColourModel[Property];
-    aMin: number;
-    aMax: number;
-    bMin: number;
-    bMax: number;
-}
 
 /**
  * Get the default values from a model as a set of current values, ie for each of
@@ -149,8 +144,8 @@ export type ModelDefaults  = {
  * @param model Model to fetch defaults from
  * @returns 
  */
-export function getModelDefaults(model?: ColourModel) : ModelDefaults {
-    return {...DefaultDefaults, ...Object.fromEntries(Object.entries(model || {}).filter(([k, v]) => k.endsWith("Default")).map(([k, v]) => ([k.replace(/Default$/, ""), v])))};
+export function getModelDefaults(model?: ColourModel) : RadialScaling {
+    return {...DefaultDefaults, ...model?.scaleDefaults};
 }
 
 export const HSLModel: ColourModel = {
@@ -159,9 +154,10 @@ export const HSLModel: ColourModel = {
     description: "Hue/Saturation/Lightness per NPM color-convert module",
     aLabel: "Saturation",
     bLabel: "Lightness",
-    generateRGB: (angle: number, distance: number, aMin: number, aMax: number, bMin: number, bMax: number) => {
-        var h = angle * 360;
-        var {a: s, b: l} = scaleAB(distance, aMin, aMax, bMin, bMax);
+    generateRGB: (angle: number, distance: number, scaling: RadialScaling) => {
+        // Hue/X/X models place yellow at 300 degrees; to align with CIE (yellow at 270) we counterrotate a bit
+        var h = (angle * 360 + 330) % 360;
+        var {a: s, b: l} = scaleAB(distance, scaling);
         return {
             inGamut: true,
             sRGB: "#" + convert.hsl.hex([h, s, l])
@@ -175,9 +171,10 @@ export const HSVModel: ColourModel = {
     description: "Hue/Saturation/Value per NPM color-convert module",
     aLabel: "Saturation",
     bLabel: "Value",
-    generateRGB: (angle: number, distance: number, aMin: number, aMax: number, bMin: number, bMax: number) => {
-        var h = angle * 360;
-        var {a: s, b: v} = scaleAB(distance, aMin, aMax, bMin, bMax);
+    generateRGB: (angle: number, distance: number, scaling: RadialScaling) => {
+        // Hue/X/X models place yellow at 300 degrees; to align with CIE (yellow at 270) we counterrotate a bit
+        var h = (angle * 360 + 330) % 360;
+        var {a: s, b: v} = scaleAB(distance, scaling);
         return {
             inGamut: true,
             sRGB: "#" + convert.hsv.hex([h, s, v])
@@ -191,10 +188,13 @@ export const HCVModel: ColourModel = {
     description: "Hue/Chroma/Value or Greynesss per https://github.com/hydra2s-info/hcv-color",
     aLabel: "Chroma",
     bLabel: "Value (inverted - 100 is max greyness, 0 is no greyness)",
-    bMaxDefault: 0,
-    generateRGB: (angle: number, distance: number, aMin: number, aMax: number, bMin: number, bMax: number) => {
-        var h = angle * 360;
-        var {a: c, b: g} = scaleAB(distance, aMin, aMax, bMin, bMax);
+    scaleDefaults: {
+        bMax: 0
+    },
+    generateRGB: (angle: number, distance: number, scaling: RadialScaling) => {
+        // Hue/X/X models place yellow at 300 degrees; to align with CIE (yellow at 270) we counterrotate a bit
+        var h = (angle * 360 + 330) % 360;
+        var {a: c, b: g} = scaleAB(distance, scaling);
         return {
             inGamut: true,
             sRGB: "#" + convert.hcg.hex([h, c, g])
@@ -209,12 +209,15 @@ export const HWBModel: ColourModel = {
     description: "Hue/White/Black per NPM color-convert module",
     aLabel: "White",
     bLabel: "Black",
-    aMaxDefault: 0,
-    bMinDefault: 100,
-    bMaxDefault: 0,
-    generateRGB: (angle: number, distance: number, aMin: number, aMax: number, bMin: number, bMax: number) => {
-        var h = angle * 360;
-        var {a: w, b} = scaleAB(distance, aMin, aMax, bMin, bMax);
+    scaleDefaults: {
+        aMax: 0,
+        bMin: 100,
+        bMax: 0
+    },
+    generateRGB: (angle: number, distance: number, scaling: RadialScaling) => {
+        // Hue/X/X models place yellow at 300 degrees; to align with CIE (yellow at 270) we counterrotate a bit
+        var h = (angle * 360 + 330) % 360;
+        var {a: w, b} = scaleAB(distance, scaling);
         return {
             inGamut: true,
             sRGB: "#" + convert.hwb.hex([h, w, b])
@@ -228,9 +231,9 @@ export const JChModel: ColourModel = {
     description: "CIECAM02 lightness/chroma/hue using NPM color-calculus module",
     aLabel: "Lightness",
     bLabel: "Chroma",
-    generateRGB: (angle: number, distance: number, aMin: number, aMax: number, bMin: number, bMax: number) => {
+    generateRGB: (angle: number, distance: number, scaling: RadialScaling) => {
         var h = angle * 360;
-        var {a: J, b: C} = scaleAB(distance, aMin, aMax, bMin, bMax);
+        var {a: J, b: C} = scaleAB(distance, scaling);
         return rgbToResult(calculus.JCh_to_sRGB(J, C, h));
     }
 }
@@ -241,9 +244,11 @@ export const LABProjectedModel: ColourModel = {
     description: "CIELAB (lightness, a, b) using NPM color-calculus module. A* and B* are mapped onto the circle using an eliptical-disc projection - so 45° is (1,1) and not (⅟√2,⅟√2), etc.",
     aLabel: "Lightness",
     bLabel: "A*B* scale",
-    bMinDefault: 100,
-    generateRGB: (angle: number, distance: number, aMin: number, aMax: number, bMin: number, bMax: number) => {
-        let {a: l, b: scale} = scaleAB(distance, aMin, aMax, bMin, bMax);
+    scaleDefaults: {
+        bMin: 100
+    },
+    generateRGB: (angle: number, distance: number, scaling: RadialScaling) => {
+        let {a: l, b: scale} = scaleAB(distance, scaling);
         // Could make this swappable but they seem to generate the exact same output
         let {x, y} = USE_ELIPTICAL_PROJECTION ? elipticalDiscProject(angle) : rayProject(angle);
         // Invert x/y as that ends up with us closely matching hue angle from every other model
@@ -257,9 +262,11 @@ export const LABModel: ColourModel = {
     description: "CIELAB (lightness, a, b) using NPM color-calculus module. A* and B* are left in cartesian coordinates so only reach their maximum values along the axes.",
     aLabel: "Lightness",
     bLabel: "A*B* scale",
-    bMinDefault: 100,
-    generateRGB: (angle: number, distance: number, aMin: number, aMax: number, bMin: number, bMax: number) => {
-        let {a: l, b: scale} = scaleAB(distance, aMin, aMax, bMin, bMax);
+    scaleDefaults: {
+        bMin: 100
+    },
+    generateRGB: (angle: number, distance: number, scaling: RadialScaling) => {
+        let {a: l, b: scale} = scaleAB(distance, scaling);
         let {x, y} = noProjection(angle);
         // Invert x/y as that ends up with us closely matching hue angle from every other model
         // Scale x/y up so 45 degrees is 1,1 and along the axes is >1, 0 or 0, >1
@@ -273,9 +280,9 @@ export const HCLModel: ColourModel = {
     description: "CIELAB (lightness, a, b) using NPM color-calculus module, in polar coordinates.",
     aLabel: "Chroma",
     bLabel: "Lightness",
-    generateRGB: (angle: number, distance: number, aMin: number, aMax: number, bMin: number, bMax: number) => {
+    generateRGB: (angle: number, distance: number, scaling: RadialScaling) => {
         let h = angle * 360;
-        let {a: c, b: l} = scaleAB(distance, aMin, aMax, bMin, bMax);
+        let {a: c, b: l} = scaleAB(distance, scaling);
         return rgbToResult(calculus.hcl_to_sRGB(h, c, l));
     }
 }
@@ -308,9 +315,9 @@ export function getModelFromCode(code: string): ColourModel | null {
 //     description: "CIECAM02 lightness/chroma/hue using NPM ciecam02 module and an alternative gamut clamp function",
 //     aLabel: "Lightness",
 //     bLabel: "Chroma",
-//     generateRGB: (angle: number, distance: number, aMin: number, aMax: number, bMin: number, bMax: number) => {
+//     generateRGB: (angle: number, distance: number, scaling: RadialScaling) => {
 //         var h = angle * 360;
-//         var {a: J, b: C} = scaleAB(distance, aMin, aMax, bMin, bMax);
+//         var {a: J, b: C} = scaleAB(distance, scaling);
 //         var trueCAM = {J: J, C: C, h: h};
 //         var [isInside, rgb] = gamut.contains(trueCAM);
 //         if(!isInside) {

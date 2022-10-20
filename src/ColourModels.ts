@@ -2,8 +2,6 @@ import * as convert from "color-convert";
 import * as calculus from "color-calculus";
 import { RGB } from "color-convert/conversions";
 
-const USE_ELIPTICAL_PROJECTION = true;
-
 /**
  * Perform the most common radial scaling: two parameters scaled linearly by a/b/min/max.
  * 
@@ -17,6 +15,25 @@ function scaleAB(distance: number, scaling: RadialScaling): {a: number, b: numbe
         b: scaling.bMin + (scaling.bMax - scaling.bMin) * distance
     }
 }
+
+function unscaleAB(ab: {a?: number, b?: number}, scaling: RadialScaling) : number {
+    var aScale, bScale;
+    if(ab.a !== undefined) aScale = scaling.aMax === scaling.aMin ? 0.5 : (ab.a - scaling.aMin) / (scaling.aMax - scaling.aMin);
+    if(ab.b !== undefined) bScale = scaling.bMax === scaling.bMin ? 0.5 : (ab.b - scaling.bMin) / (scaling.bMax - scaling.bMin);
+    if(aScale !== undefined && bScale !== undefined) {
+        // If we have both but one of them was unscaled (ie min==max) then use the other
+        if(scaling.aMin === scaling.aMax) return bScale;
+        else if(scaling.bMin === scaling.bMax) return aScale;
+        return (aScale + bScale) / 2;
+    } else if(aScale !== undefined) {
+        return aScale;
+    } else if(bScale !== undefined) {
+        return bScale;
+    }
+    return 0.5;
+}
+
+
 /**
  * Produce a ModelResult from an sRGB value expressed as an array
  * (as returned from the color-calculus module).
@@ -35,11 +52,19 @@ function rgbToResult(rgb: RGB): ModelResult {
     };
 }
 
-  /**
-   * Return the eliptical disc projection of a point angle [0-1] around the circumference
-   * of a unit circle onto the unit square.
-   * @param angle 
-   */
+/**
+ * Return the eliptical disc projection of a point angle [0-1] around the circumference
+ * of a unit circle onto the unit square.
+ * 
+ * Taken from https://arxiv.org/ftp/arxiv/papers/1509/1509.06344.pdf
+ * 
+ * @param angle 
+ */
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars --
+ This is an alternative way of projecting a square (colour space) onto a circle (the wheel).
+ While I haven't unpacked the maths to confirm it, it appears to produce identical results
+ to the somewhat simpler-to-comprehend rayProject function below so is currently unused.
+*/
 function elipticalDiscProject(angle: number): {x: number, y: number} {
     var u = Math.sin(angle * Math.PI * 2);
     var v = Math.cos(angle * Math.PI * 2);
@@ -59,41 +84,80 @@ function elipticalDiscProject(angle: number): {x: number, y: number} {
   }
 
   /**
-   * Return the linear projection of an angle [0,1] onto the perimeter
-   * of a unit square on the origin.
+   * Convert an angle on the colour wheel into X,Y coordinates in
+   * colour space.
+   * 
+   * Performs a linear projection of angle to the perimeter of a 2x2
+   * square centered on the origin, so x and y are both in the
+   * range [-1,1] and at least one of them will always be +1 or -1.
    * @param angle 
    */
 function rayProject(angle: number): {x: number, y: number} {
     // Unwind just in case
     angle = angle % 1.0;
 
-    // It's easier to do this in the +x,+y quadrant and then rotate around
+    // It's easier to do this in the +x,+y quadrant and then flip
+    // some signs later. u/v is the coordinate space where the line
+    // is in that quadrant.
+    // Remember angle is counterclockwise
     var tanAngle = Math.tan((angle % 0.25) * Math.PI * 2);
-    // Can't represent Pi/2 in floating point so the highest we get is +largenumber
-    var u = Math.min(1, tanAngle);
-    var v = (tanAngle === 0) ? 1 : Math.min(1, 1/tanAngle);
+    var u = (tanAngle === 0) ? 1 : Math.min(1, 1/tanAngle);
+    // Pi/2 can't be represented precisely in floating point so we never 
+    // actually get infinity as a result, just some very large number.    
+    var v = Math.min(1, tanAngle);
     var x: number, y: number;
     if(angle < 0.25) {
       x = u;
       y = v;
     } else if(angle < 0.5) {
-      x = v;
-      y = -u;
+      x = -v;
+      y = u;
     } else if(angle < 0.75) {
       x = -u;
       y = -v;
     } else { // Better not be > 1...
-      x = -v;
-      y = u;
+      x = v;
+      y = -u;
     }
-    return {
-        x: Math.max(-1, Math.min(1, x)),
-        y: Math.max(-1, Math.min(1, y))
-    };
+    return {x, y};
   }
 
+/**
+ * Reverse rayProject to get an angle on the wheel from an x,y coordinate
+ * in colour space. X and Y don't have to be scaled to fit any particular
+ * range as the answer doesn't change.
+ * 
+ * Angle returned will be counterclockwise from the +ve X axis.
+ * 
+ * @param x X cordinate of a point in colour space
+ * @param y Y coordinate of a point in colour space
+ * @returns The angle to that point, in range [0, 1), counterclockwise from +ve X axis
+ */
+function rayUnProject(x: number, y: number): number {
+    // If y is 0 then we can't do atan(x/y) so special case it
+    if(y === 0) {
+        return x >= 0 ? 0 : 0.5;
+    } else {
+        // Gives an angle in the range -90 to +90
+        let angle = Math.atan(y/x) / (Math.PI * 2);
+        if(x < 0) angle += 0.5;
+        if(angle < 0) angle += 1;
+        console.log("Projected ", x, y, "to", angle,angle * 360);
+        
+        return angle;
+    }
+}
+
+/**
+ * Convert an angle into an X,Y coordinate without any attempt to project
+ * the square coordinate space down onto a circle (ie values like x=1, y=1
+ * are not reachable on the circle).
+ * @param angle Angle counterclockwise from +ve X axis, in range [0, 1)
+ * @returns {x, y} coordinates of a point on the circumference of a unit
+ * circle at that angle.
+ */
 function noProjection(angle: number): {x: number, y: number} {
-    return {x: Math.sin(angle * Math.PI * 2), y: Math.cos(angle * Math.PI * 2)};
+    return {x: Math.cos(angle * Math.PI * 2), y: Math.sin(angle * Math.PI * 2)};
 }
 
 
@@ -102,7 +166,10 @@ export type ModelResult = {
     sRGB: string;
 }
 
-export interface ColourModel {
+/** Generic type for colour model parameters, which are almost always triplets of numbers (usually 0-360 or 0-100) */
+export type ModelParams = [number, number, number];
+
+export interface ColourModel<ParamType=ModelParams> {
     code: string;
     name: string;
     description: string;
@@ -110,6 +177,7 @@ export interface ColourModel {
     bLabel: string | null;
     scaleDefaults?: RadialScalingOpt;
     generateRGB: (angle: number, distance: number, scaling: RadialScaling) => ModelResult;
+    locateLAB?: (lab: ModelParams, scaling: RadialScaling) => {angle: number, distance: number, inModel: ParamType};
 }
 
 export type RadialScaling = {
@@ -162,7 +230,16 @@ export const HSLModel: ColourModel = {
             inGamut: true,
             sRGB: "#" + convert.hsl.hex([h, s, l])
         };
-      }
+    },
+    locateLAB(lab, scaling):  {angle: number, distance: number, inModel: ModelParams} {
+        var [h, s, l] = convert.lab.hsl(lab);
+        var dist = unscaleAB({a: s, b: l}, scaling)
+        return {
+            angle: ((h + 30) % 360) / 360,
+            distance: dist,
+            inModel: [h, s, l]
+        }        
+    },
 }
 
 export const HSVModel: ColourModel = {
@@ -179,13 +256,22 @@ export const HSVModel: ColourModel = {
             inGamut: true,
             sRGB: "#" + convert.hsv.hex([h, s, v])
         };
-      }
+    },
+    locateLAB(lab: ModelParams, scaling: RadialScaling) {
+        var [h, s, v] = convert.lab.hsv(lab);
+        var dist = unscaleAB({a: s, b: v}, scaling)
+        return {
+            angle: ((h + 30) % 360) / 360,
+            distance: dist,
+            inModel: [h, s, v]
+        }
+    },
 }
 
 export const HCVModel: ColourModel = {
     code: "HCV",
     name: "Hue/Chroma/inverted Value (Greyness)",
-    description: "Hue/Chroma/Value or Greynesss per https://github.com/hydra2s-info/hcv-color",
+    description: "Hue/Chroma/Value (or Greynesss) per NPM color-convert module. HCV from https://github.com/hydra2s-info/hcv-color",
     aLabel: "Chroma",
     bLabel: "Value (inverted - 100 is max greyness, 0 is no greyness)",
     scaleDefaults: {
@@ -199,7 +285,16 @@ export const HCVModel: ColourModel = {
             inGamut: true,
             sRGB: "#" + convert.hcg.hex([h, c, g])
         };
-      }
+      },
+      locateLAB(lab: ModelParams, scaling: RadialScaling) {
+        var [h, c, g] = convert.lab.hcg(lab);
+        var dist = unscaleAB({a: c, b: g}, scaling)
+        return {
+            angle: ((h + 30) % 360) / 360,
+            distance: dist,
+            inModel: [h, c, g]
+        }
+    },      
 }
 
 
@@ -222,7 +317,16 @@ export const HWBModel: ColourModel = {
             inGamut: true,
             sRGB: "#" + convert.hwb.hex([h, w, b])
         };
-    }
+    },
+    locateLAB(lab: ModelParams, scaling: RadialScaling) {
+        var [h, w, b] = convert.lab.hwb(lab);
+        var dist = unscaleAB({b}, scaling)
+        return {
+            angle: ((h + 30) % 360) / 360,
+            distance: dist,
+            inModel: [h, w, b]
+        }
+    },
 }
 
 export const JChModel: ColourModel = {
@@ -235,7 +339,16 @@ export const JChModel: ColourModel = {
         var h = angle * 360;
         var {a: J, b: C} = scaleAB(distance, scaling);
         return rgbToResult(calculus.JCh_to_sRGB(J, C, h));
-    }
+    },
+    locateLAB(lab, scaling):  {angle: number, distance: number, inModel: ModelParams} {
+        var [J, C, h] = calculus.lab_to_JCh(lab);
+        var dist = unscaleAB({a: J, b: C}, scaling)
+        return {
+            angle: h / 360,
+            distance: dist,
+            inModel: [J, C, h]
+        }        
+    },    
 }
 
 export const LABProjectedModel: ColourModel = {
@@ -249,12 +362,34 @@ export const LABProjectedModel: ColourModel = {
     },
     generateRGB: (angle: number, distance: number, scaling: RadialScaling) => {
         let {a: l, b: scale} = scaleAB(distance, scaling);
+        scale *= LAB_SCALE;
         // Could make this swappable but they seem to generate the exact same output
-        let {x, y} = USE_ELIPTICAL_PROJECTION ? elipticalDiscProject(angle) : rayProject(angle);
+        let {x, y} = rayProject(angle);
         // Invert x/y as that ends up with us closely matching hue angle from every other model
-        return rgbToResult(calculus.lab_to_sRGB(l, y * scale, x * scale));
-    }
+        return rgbToResult(calculus.lab_to_sRGB(l, x * scale, y * scale));
+    },
+    locateLAB(lab, scaling):  {angle: number, distance: number, inModel: ModelParams} {
+        var [l, a, b] = lab;
+        var angle = rayUnProject(a, b)
+        // Work out where that angle intersects the +/-1 square in colour space
+        let {x:unitX, y:unitY} = rayProject(angle);
+        // Now work out how out along that ray we are
+        let raydist = unitX === 0 ? (unitY === 0 ? 0 : b/unitY) : a/unitX;
+        let scale = raydist;
+        var dist = unscaleAB({a: l, b: scale}, scaling)
+        return {
+            angle: angle,
+            distance: dist,
+            inModel: lab
+        }        
+    },        
 }
+/** Scale factor for A* and B* in L*A*B* space
+ * While A* and B* are technically unbounded, +/- 100 is definitely
+ * too small for a maximum value (128 is common when using a single byte,
+ * 150 is possible for some reds).
+*/
+const LAB_SCALE = 1.5;
 
 export const LABModel: ColourModel = {
     code: "LAB",
@@ -267,11 +402,23 @@ export const LABModel: ColourModel = {
     },
     generateRGB: (angle: number, distance: number, scaling: RadialScaling) => {
         let {a: l, b: scale} = scaleAB(distance, scaling);
+        // A*B* can exceed 100, so scale up
+        scale *= LAB_SCALE;
         let {x, y} = noProjection(angle);
-        // Invert x/y as that ends up with us closely matching hue angle from every other model
-        // Scale x/y up so 45 degrees is 1,1 and along the axes is >1, 0 or 0, >1
-        return rgbToResult(calculus.lab_to_sRGB(l, y * scale * Math.SQRT2, x * scale * Math.SQRT2));
-    }
+        return rgbToResult(calculus.lab_to_sRGB(l, x * scale, y * scale));
+    },
+    locateLAB(lab, scaling):  {angle: number, distance: number, inModel: ModelParams} {
+        var [l, a, b] = lab;
+        // Angle is the same whether it's a ray-square intersection or angle around a circle, at least
+        var angle = rayUnProject(a, b)
+        let scale = Math.sqrt(a**2 + b**2) / LAB_SCALE;
+        var dist = unscaleAB({a: l, b: scale}, scaling)
+        return {
+            angle: angle,
+            distance: dist,
+            inModel: lab
+        }        
+    },
 }
 
 export const HCLModel: ColourModel = {
@@ -284,7 +431,16 @@ export const HCLModel: ColourModel = {
         let h = angle * 360;
         let {a: c, b: l} = scaleAB(distance, scaling);
         return rgbToResult(calculus.hcl_to_sRGB(h, c, l));
-    }
+    },
+    locateLAB(lab: ModelParams, scaling: RadialScaling) {
+        var [h, c, l] = calculus.lab_to_hcl(lab);
+        var dist = unscaleAB({a: c, b: l}, scaling)
+        return {
+            angle: h / 360,
+            distance: dist,
+            inModel: [h, c, l]
+        }
+    },
 }
 
 export const ALL_MODELS = [HSLModel, HSVModel, HCVModel, HWBModel, JChModel, LABModel, LABProjectedModel, HCLModel/*, JChAltModel*/];

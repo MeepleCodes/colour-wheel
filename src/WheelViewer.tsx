@@ -5,13 +5,22 @@ import CardMedia from '@mui/material/CardMedia';
 import CardContent from '@mui/material/CardContent';
 
 import { ColourWheel } from './ColourWheel';
-import { ALL_MODELS, ColourModel, getModelDefaults, getModelFromCode, HSLModel, RadialScaling } from './ColourModels';
+import { ALL_MODELS, ColourModel, getModelDefaults, getModelFromCode, HSLModel } from './ColourModels';
 import FormControl from '@mui/material/FormControl';
 import FormLabel from '@mui/material/FormLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import Slider from '@mui/material/Slider';
 import Typography from '@mui/material/Typography';
+import { goldenFluidAcrylicSetThick, goldenFluidAcrylicSetThin, goldenHeavyBodyModernMixingSetThick, goldenHeavyBodyModernMixingSetThin } from './paints/GoldenPalettes';
+import { uniqueHues } from './paints/UniqueHues';
+import { SwatchSet } from './paints/Swatch';
+
+const noSwatchSet: SwatchSet = {
+    name: "None",
+    swatches: []
+};
+const ALL_SWATCHESETS = [noSwatchSet, goldenFluidAcrylicSetThick, goldenFluidAcrylicSetThin, goldenHeavyBodyModernMixingSetThick, goldenHeavyBodyModernMixingSetThin, uniqueHues];
 /**
  * Current state of the wheel viewer.
  * 
@@ -21,6 +30,7 @@ import Typography from '@mui/material/Typography';
  */
 type ViewerState = {
     model: ColourModel,
+    swatchSet: SwatchSet,
     rings: number,
     slices: number,
     aMin: number,
@@ -33,6 +43,7 @@ export class WheelViewer extends React.Component<{}, ViewerState> {
 
     state: ViewerState = {
         model: HSLModel,
+        swatchSet: noSwatchSet,
         rings: 10,
         slices: 60,
         aMin: 0,
@@ -67,12 +78,30 @@ export class WheelViewer extends React.Component<{}, ViewerState> {
     changeMinMax(newValue: {aMin?: number, aMax?: number, bMin?: number, bMax?: number}) {
         this.setState({...this.state, ...newValue});
     }
+    changeSwatchSet(newValue: string | null) {
+        let newSet = noSwatchSet;
+        for(let set of ALL_SWATCHESETS) {
+            if(newValue === set.name) {
+                newSet = set;
+                break;
+            }
+        }
+        this.setState({swatchSet: newSet});
+    }
     render(): React.ReactNode {
         return (
             <Card sx={{display: 'flex', flexDirection: 'row', margin: 2, width: 1200}}>
-            <CardMedia sx={{margin: 2}}><ColourWheel size={750} model={this.state.model} slices={this.state.slices} rings={this.state.rings} aMin={this.state.aMin} aMax={this.state.aMax} bMin={this.state.bMin} bMax={this.state.bMax}/></CardMedia>
+            <CardMedia sx={{margin: 2}}><ColourWheel swatches={this.state.swatchSet.swatches} size={750} model={this.state.model} slices={this.state.slices} rings={this.state.rings} aMin={this.state.aMin} aMax={this.state.aMax} bMin={this.state.bMin} bMax={this.state.bMax}/></CardMedia>
             <CardContent sx={{flex: 1}}>
-                <FormControl>
+                <FormControl sx={{display: 'flex'}}>
+                    <FormLabel id="colour-swatchset-label">Show swatches</FormLabel>
+                    <Select labelId="colour-swatchset-label" value={this.state.swatchSet?.name} onChange={e => this.changeSwatchSet(e.target.value)}>
+                        {ALL_SWATCHESETS.map(set =>
+                            <MenuItem value={set.name}>{set.name}</MenuItem>
+                        )}
+                    </Select>
+                </FormControl>
+                <FormControl sx={{display: 'flex'}}>
                     <FormLabel id="colour-model-label">Model</FormLabel>
                     <Select labelId="colour-model-label" value={this.state.model.code} onChange={e => this.changeModel(getModelFromCode(e.target.value) as ColourModel)}>
                         {ALL_MODELS.map(model =>

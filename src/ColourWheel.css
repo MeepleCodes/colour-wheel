@@ -1,0 +1,14 @@
+.wheel-wrapper {
+    position: relative;
+}
+div.swatch {
+    border: 1px solid black;
+    border-radius: 100%;
+    position: absolute;
+}
+div.swatch.inside {
+    border-radius: 100% 100% 100% 0;
+}
+div.swatch.outside {
+    border-radius: 100% 0 100% 100%;
+}

@@ -11,6 +11,7 @@ export type ColourWheelProps = {
   size?: number;
   slices?: number;
   rings?: number;
+  fill?: boolean;
   model: ColourModel;
   aMin?: number;
   aMax?: number;
@@ -51,6 +52,7 @@ export class ColourWheel extends React.Component<ColourWheelProps> {
       size = DEFAULT_SIZE,
       slices = 60,
       rings = 10,
+      fill = false,
       model,
       aMin,
       aMax,
@@ -68,20 +70,24 @@ export class ColourWheel extends React.Component<ColourWheelProps> {
     // compensating for it
     ctx.scale(1, -1);
     const sliceAngle = Math.PI * 2 / slices;
-    const radius = size/2;
+    // Avoid clipping the outside ring by insetting 1px
+    const radius = size/2 - 1;
     const ringRadius = radius/rings;
 
-    const angleOverlap = 0.007;
+    
     const radiusOverlap = 0.5;
 
     for(var slice = 0; slice < slices; slice++) {
       // Whether we were previously in-gamut in this slice, or null if unknown (ie first ring)
       var sliceInGamut: boolean | null = null;
       for(var ring=0; ring < rings; ring++) {
-        var startAngle = ((slice - 0.5) * sliceAngle) - angleOverlap;
-        var endAngle = ((slice + 0.5) * sliceAngle) + angleOverlap;
+        
+        
         var startRadius = Math.max(0, ring * ringRadius - radiusOverlap);
         var endRadius = (ring + 1) * ringRadius;
+        var angleOverlap = Math.asin(0.5/endRadius);
+        var startAngle = ((slice - 0.5) * sliceAngle) - angleOverlap;
+        var endAngle = ((slice + 0.5) * sliceAngle) + angleOverlap;
         
         // Angle goes [0, 1) but distance goes (0, 1] because we always want to at least draw the maximum chroma/brightness/value at the outside
         var result = model.generateRGB(slice/slices, (ring + 1)/rings, scaling);
@@ -90,10 +96,11 @@ export class ColourWheel extends React.Component<ColourWheelProps> {
         ctx.beginPath();
         ctx.arc(0, 0, startRadius, startAngle, endAngle);
         // Draw a gamut border if the in-gamut has changed (and wasn't previously null for 'unknown')
-        if(result.inGamut !== sliceInGamut) ctx.stroke();
+        if(fill && result.inGamut !== sliceInGamut) ctx.stroke();
         ctx.arc(0, 0, endRadius, endAngle, startAngle, true);
         ctx.closePath();
-        ctx.fill();
+        if(fill) ctx.fill();
+        else ctx.stroke();
         sliceInGamut = result.inGamut;
       }
     }
@@ -170,7 +177,6 @@ export class ColourWheel extends React.Component<ColourWheelProps> {
         }
       });
     }
-    console.log("Rendering wheel with swatches", swatches, "details", details);
     return(
       <div className="wheel-wrapper">
         <>

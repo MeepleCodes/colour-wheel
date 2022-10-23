@@ -5,6 +5,8 @@ import React from 'react';
 import { ColourModel, getModelDefaults, RadialScaling } from './ColourModels';
 import { Swatch } from './paints/Swatch';
 
+import Tooltip from '@mui/material/Tooltip';
+
 import './ColourWheel.css';
 
 export type ColourWheelProps = {
@@ -12,6 +14,7 @@ export type ColourWheelProps = {
   slices?: number;
   rings?: number;
   fill?: boolean;
+  gamutWarnings?: boolean;
   model: ColourModel;
   aMin?: number;
   aMax?: number;
@@ -52,7 +55,8 @@ export class ColourWheel extends React.Component<ColourWheelProps> {
       size = DEFAULT_SIZE,
       slices = 60,
       rings = 10,
-      fill = false,
+      fill = true,
+      gamutWarnings = false,
       model,
       aMin,
       aMax,
@@ -96,11 +100,22 @@ export class ColourWheel extends React.Component<ColourWheelProps> {
         ctx.beginPath();
         ctx.arc(0, 0, startRadius, startAngle, endAngle);
         // Draw a gamut border if the in-gamut has changed (and wasn't previously null for 'unknown')
-        if(fill && result.inGamut !== sliceInGamut) ctx.stroke();
+        if(fill && gamutWarnings && result.inGamut !== sliceInGamut) {
+          ctx.strokeStyle = "rgba(0, 0, 0, 0.4)";
+          ctx.stroke();
+        }
         ctx.arc(0, 0, endRadius, endAngle, startAngle, true);
         ctx.closePath();
         if(fill) ctx.fill();
         else ctx.stroke();
+        if(fill && gamutWarnings && !result.inGamut) {
+          let x = Math.cos(slice * sliceAngle) * (ring + 0.5) * ringRadius;
+          let y = Math.sin(slice * sliceAngle) * (ring + 0.5) * ringRadius;
+          ctx.beginPath();
+          ctx.arc(x, y, ringRadius/20, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(0, 0, 0, 0.2)";
+          ctx.stroke();
+        }
         sliceInGamut = result.inGamut;
       }
     }
@@ -158,7 +173,7 @@ export class ColourWheel extends React.Component<ColourWheelProps> {
       // Need a const to capture to stop typescript worrying about the lambda in map()
       const lab = model.locateLAB;
       details = swatches.map(swatch => {
-        let {angle, distance, inModel} = lab(swatch.lab, scaling);
+        let {angle, distance, aDelta, bDelta, inModel} = lab(swatch.lab, scaling);
         let angleRad = angle * Math.PI * 2;
         let clampedDistance = Math.max(0, Math.min(1, distance));
         // Because of the flipped canvas, our angles start from the +ve X axis and wind anticlockwise
@@ -173,6 +188,8 @@ export class ColourWheel extends React.Component<ColourWheelProps> {
           // Invert angle into CSS world (where it's clockwise again)
           angle: -angleRad,
           inModel: inModel,
+          aDelta,
+          bDelta,
           oob: distance < 0 ? "inside" : distance > 1 ? "outside" : ""
         }
       });
@@ -184,11 +201,21 @@ export class ColourWheel extends React.Component<ColourWheelProps> {
         {
           // We could use styled-components to remove the explicit width/height everywhere, but this works for now
           // Angle is offset by 45 degrees as the border-radiuses mean our "horizontal" starts out going bottom-left to top-right
-          details.map(swatch => <div 
-            className={"swatch " + swatch.oob} 
+          details.map(swatch => <Tooltip open={true} 
+            key={swatch.name}
+            arrow
+            placement="right"
             // title={`${swatch.name}: angle=${swatch.angle * 360 / (Math.PI * 2)}, HWB=${swatch.inModel}`}
-            title={`${swatch.name} (${swatch.inModel})`}
-            style={{transform: `rotate(${swatch.angle + Math.PI/4}rad)`, left: swatch.left, top: swatch.top, backgroundColor: swatch.colour, width: swatchSize, height: swatchSize}}/>)
+            // title={`${swatch.name} a:${swatch.aDelta} b: ${swatch.bDelta} (${swatch.inModel})`}
+            title={swatch.name}
+            >
+              <div
+                className={"swatch " + swatch.oob} 
+                
+                
+                
+                style={{transform: `rotate(${swatch.angle + Math.PI/4}rad)`, left: swatch.left, top: swatch.top, backgroundColor: swatch.colour, width: swatchSize, height: swatchSize}}/>
+            </Tooltip>)
         }
         </>
       </div>
@@ -202,5 +229,7 @@ type SwatchDetails = {
   name: string;
   angle: number;
   oob: string;
+  aDelta: number;
+  bDelta: number;
   inModel: [number, number, number]
 }

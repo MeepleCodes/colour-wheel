@@ -16,21 +16,46 @@ function scaleAB(distance: number, scaling: RadialScaling): {a: number, b: numbe
     }
 }
 
-function unscaleAB(ab: {a?: number, b?: number}, scaling: RadialScaling) : number {
-    var aScale, bScale;
+/**
+ * Given one or both A/B properties of a colour, and a set of radial scaling parameters,
+ * determine the best distance from the centre to place a colour with those a/b values.
+ * 
+ * The returned distance is for the range [0, 1] (centre to outside) but it can return values
+ * outside this range if the scaling parameters mean the circle doesn't include the A/B
+ * values supplied.
+ * 
+ * If the scaling for one parameter is a fixed value (ie min==max, it doesn't vary along
+ * the radius) then always use the other value to calculate a distance. If both are fixed,
+ * return 0.5 (absent anything better to do). If both parameters vary along the radius then
+ * use the average of them - this will probably match neither perfectly.
+ * @param ab 
+ * @param scaling 
+ * @returns 
+ */
+function unscaleAB(ab: {a?: number, b?: number}, scaling: RadialScaling) : {distance: number, aDelta: number, bDelta: number} {
+    var aScale, bScale, distance;
     if(ab.a !== undefined) aScale = scaling.aMax === scaling.aMin ? 0.5 : (ab.a - scaling.aMin) / (scaling.aMax - scaling.aMin);
     if(ab.b !== undefined) bScale = scaling.bMax === scaling.bMin ? 0.5 : (ab.b - scaling.bMin) / (scaling.bMax - scaling.bMin);
     if(aScale !== undefined && bScale !== undefined) {
         // If we have both but one of them was unscaled (ie min==max) then use the other
-        if(scaling.aMin === scaling.aMax) return bScale;
-        else if(scaling.bMin === scaling.bMax) return aScale;
-        return (aScale + bScale) / 2;
+        if(scaling.aMin === scaling.aMax) distance = bScale;
+        else if(scaling.bMin === scaling.bMax) distance = aScale;
+        else distance = (aScale + bScale) / 2;
     } else if(aScale !== undefined) {
-        return aScale;
+        distance = aScale;
     } else if(bScale !== undefined) {
-        return bScale;
+        distance = bScale;
+    } else {
+        distance = 0.5;
     }
-    return 0.5;
+    // Now work out what the A,B values of the point *in* the plane of the circle
+    // at that distance is, and use this to calculate deltas
+    var {a, b} = scaleAB(distance, scaling);
+    return {
+        distance: distance,
+        aDelta: ab.a !== undefined ? ab.a - a : 0,
+        bDelta: ab.b !== undefined ? ab.b - b : 0
+    }
 }
 
 
@@ -134,18 +159,9 @@ function rayProject(angle: number): {x: number, y: number} {
  * @returns The angle to that point, in range [0, 1), counterclockwise from +ve X axis
  */
 function rayUnProject(x: number, y: number): number {
-    // If y is 0 then we can't do atan(x/y) so special case it
-    if(y === 0) {
-        return x >= 0 ? 0 : 0.5;
-    } else {
-        // Gives an angle in the range -90 to +90
-        let angle = Math.atan(y/x) / (Math.PI * 2);
-        if(x < 0) angle += 0.5;
-        if(angle < 0) angle += 1;
-        console.log("Projected ", x, y, "to", angle,angle * 360);
-        
-        return angle;
-    }
+    let angle = Math.atan2(y, x) / (Math.PI * 2);
+    if(angle < 0) angle += 1;
+    return angle;
 }
 
 /**
@@ -169,7 +185,7 @@ export type ModelResult = {
 /** Generic type for colour model parameters, which are almost always triplets of numbers (usually 0-360 or 0-100) */
 export type ModelParams = [number, number, number];
 
-export interface ColourModel<ParamType=ModelParams> {
+export interface ColourModel<ParamType = ModelParams> {
     code: string;
     name: string;
     description: string;
@@ -177,7 +193,7 @@ export interface ColourModel<ParamType=ModelParams> {
     bLabel: string | null;
     scaleDefaults?: RadialScalingOpt;
     generateRGB: (angle: number, distance: number, scaling: RadialScaling) => ModelResult;
-    locateLAB?: (lab: ModelParams, scaling: RadialScaling) => {angle: number, distance: number, inModel: ParamType};
+    locateLAB?: (lab: ModelParams, scaling: RadialScaling) => ColourLocation<ParamType>;
 }
 
 export type RadialScaling = {
@@ -188,6 +204,14 @@ export type RadialScaling = {
 }
 export type RadialScalingOpt = {
     [k in keyof RadialScaling]?: RadialScaling[k];
+}
+
+export type ColourLocation<ParamType = ModelParams> = {
+    angle: number;
+    distance: number;
+    inModel: ParamType;
+    aDelta: number;
+    bDelta: number;
 }
 
 /**
@@ -231,13 +255,12 @@ export const HSLModel: ColourModel = {
             sRGB: "#" + convert.hsl.hex([h, s, l])
         };
     },
-    locateLAB(lab, scaling):  {angle: number, distance: number, inModel: ModelParams} {
+    locateLAB(lab, scaling):  ColourLocation {
         var [h, s, l] = convert.lab.hsl(lab);
-        var dist = unscaleAB({a: s, b: l}, scaling)
         return {
             angle: ((h + 30) % 360) / 360,
-            distance: dist,
-            inModel: [h, s, l]
+            inModel: [h, s, l],
+            ...unscaleAB({a: s, b: l}, scaling)
         }        
     },
 }
@@ -259,11 +282,10 @@ export const HSVModel: ColourModel = {
     },
     locateLAB(lab: ModelParams, scaling: RadialScaling) {
         var [h, s, v] = convert.lab.hsv(lab);
-        var dist = unscaleAB({a: s, b: v}, scaling)
         return {
             angle: ((h + 30) % 360) / 360,
-            distance: dist,
-            inModel: [h, s, v]
+            inModel: [h, s, v],
+            ...unscaleAB({a: s, b: v}, scaling)
         }
     },
 }
@@ -288,11 +310,10 @@ export const HCVModel: ColourModel = {
       },
       locateLAB(lab: ModelParams, scaling: RadialScaling) {
         var [h, c, g] = convert.lab.hcg(lab);
-        var dist = unscaleAB({a: c, b: g}, scaling)
         return {
             angle: ((h + 30) % 360) / 360,
-            distance: dist,
-            inModel: [h, c, g]
+            inModel: [h, c, g],
+            ...unscaleAB({a: c, b: g}, scaling)
         }
     },      
 }
@@ -320,11 +341,10 @@ export const HWBModel: ColourModel = {
     },
     locateLAB(lab: ModelParams, scaling: RadialScaling) {
         var [h, w, b] = convert.lab.hwb(lab);
-        var dist = unscaleAB({b}, scaling)
         return {
             angle: ((h + 30) % 360) / 360,
-            distance: dist,
-            inModel: [h, w, b]
+            inModel: [h, w, b],
+            ...unscaleAB({b}, scaling)
         }
     },
 }
@@ -338,15 +358,15 @@ export const JChModel: ColourModel = {
     generateRGB: (angle: number, distance: number, scaling: RadialScaling) => {
         var h = angle * 360;
         var {a: J, b: C} = scaleAB(distance, scaling);
+        C *= 1.5;
         return rgbToResult(calculus.JCh_to_sRGB(J, C, h));
     },
-    locateLAB(lab, scaling):  {angle: number, distance: number, inModel: ModelParams} {
+    locateLAB(lab, scaling):  ColourLocation {
         var [J, C, h] = calculus.lab_to_JCh(lab);
-        var dist = unscaleAB({a: J, b: C}, scaling)
         return {
             angle: h / 360,
-            distance: dist,
-            inModel: [J, C, h]
+            inModel: [J, C, h],
+            ...unscaleAB({a: J, b: C/1.5}, scaling)
         }        
     },    
 }
@@ -368,19 +388,19 @@ export const LABProjectedModel: ColourModel = {
         // Invert x/y as that ends up with us closely matching hue angle from every other model
         return rgbToResult(calculus.lab_to_sRGB(l, x * scale, y * scale));
     },
-    locateLAB(lab, scaling):  {angle: number, distance: number, inModel: ModelParams} {
+    locateLAB(lab, scaling):  ColourLocation {
         var [l, a, b] = lab;
         var angle = rayUnProject(a, b)
         // Work out where that angle intersects the +/-1 square in colour space
         let {x:unitX, y:unitY} = rayProject(angle);
         // Now work out how out along that ray we are
         let raydist = unitX === 0 ? (unitY === 0 ? 0 : b/unitY) : a/unitX;
-        let scale = raydist;
-        var dist = unscaleAB({a: l, b: scale}, scaling)
+        // Reduce down to get into the 0-100 range (ish)
+        let scale = raydist/LAB_SCALE;
         return {
             angle: angle,
-            distance: dist,
-            inModel: lab
+            inModel: lab,
+            ...unscaleAB({a: l, b: scale}, scaling)
         }        
     },        
 }
@@ -407,16 +427,15 @@ export const LABModel: ColourModel = {
         let {x, y} = noProjection(angle);
         return rgbToResult(calculus.lab_to_sRGB(l, x * scale, y * scale));
     },
-    locateLAB(lab, scaling):  {angle: number, distance: number, inModel: ModelParams} {
+    locateLAB(lab, scaling): ColourLocation {
         var [l, a, b] = lab;
         // Angle is the same whether it's a ray-square intersection or angle around a circle, at least
         var angle = rayUnProject(a, b)
         let scale = Math.sqrt(a**2 + b**2) / LAB_SCALE;
-        var dist = unscaleAB({a: l, b: scale}, scaling)
         return {
             angle: angle,
-            distance: dist,
-            inModel: lab
+            inModel: lab,
+            ...unscaleAB({a: l, b: scale}, scaling)
         }        
     },
 }
@@ -432,13 +451,12 @@ export const HCLModel: ColourModel = {
         let {a: c, b: l} = scaleAB(distance, scaling);
         return rgbToResult(calculus.hcl_to_sRGB(h, c, l));
     },
-    locateLAB(lab: ModelParams, scaling: RadialScaling) {
+    locateLAB(lab: ModelParams, scaling: RadialScaling): ColourLocation {
         var [h, c, l] = calculus.lab_to_hcl(lab);
-        var dist = unscaleAB({a: c, b: l}, scaling)
         return {
             angle: h / 360,
-            distance: dist,
-            inModel: [h, c, l]
+            inModel: [h, c, l],
+            ...unscaleAB({a: c, b: l}, scaling)
         }
     },
 }

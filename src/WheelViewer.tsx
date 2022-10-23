@@ -40,7 +40,8 @@ type ViewerState = {
     aMax: number,
     bMin: number,
     bMax: number,
-    fill: boolean
+    fill: boolean,
+    gamutWarnings: boolean
 }
 type ViewerProps = {}
 export class WheelViewer extends React.Component<{}, ViewerState> {
@@ -54,7 +55,8 @@ export class WheelViewer extends React.Component<{}, ViewerState> {
         aMax: 100,
         bMin: 0,
         bMax: 100,
-        fill: true
+        fill: true,
+        gamutWarnings: false
     };
     changeModel(newModel: ColourModel) {
         this.setState((prevState: ViewerState, props: ViewerProps) => {
@@ -104,6 +106,7 @@ export class WheelViewer extends React.Component<{}, ViewerState> {
                     slices={this.state.slices} 
                     rings={this.state.rings} 
                     fill={this.state.fill}
+                    gamutWarnings={this.state.gamutWarnings}
                     aMin={this.state.aMin} 
                     aMax={this.state.aMax} 
                     bMin={this.state.bMin} 
@@ -127,18 +130,19 @@ export class WheelViewer extends React.Component<{}, ViewerState> {
                     </Select>
                 </FormControl>
                 <FormControlLabel control={<Switch checked={this.state.fill} onChange={e => this.setState({...this.state, fill: e.target.checked})}/>} label="Fill wheel with colour"/>
+                <FormControlLabel disabled={!this.state.fill} control={<Switch checked={this.state.gamutWarnings} onChange={e => this.setState({...this.state, gamutWarnings: e.target.checked})}/>} label="Show gamut warnings"/>
                 
                 <h5>Wheel</h5>
                 Slices: <Slider value={this.state.slices} valueLabelDisplay="auto" min={3} max={120} step={3} onChange={(event, newValue) => this.setState({...this.state, slices: newValue as number})}/>
                 Rings: <Slider value={this.state.rings} valueLabelDisplay="auto" min={1} max={20} onChange={(event, newValue) => this.setState({...this.state, rings: newValue as number})}/>
                 <h5>{this.state.model.aLabel}</h5>
-                Fixed: <Slider value={this.state.aMin} min={0} max={100} onChange={(event, newValue) => this.changeMinMax({aMin: newValue as number, aMax: newValue as number})}/>
-                Min: <Slider value={this.state.aMin} min={0} max={100} onChange={(event, newValue) => this.changeMinMax({aMin: newValue as number})}/>
-                Max: <Slider value={this.state.aMax} min={0} max={100} onChange={(event, newValue) => this.changeMinMax({aMax: newValue as number})}/>
+                Fixed: <Slider value={this.state.aMin} valueLabelDisplay="auto" min={0} max={100} onChange={(event, newValue) => this.changeMinMax({aMin: newValue as number, aMax: newValue as number})}/>
+                Min: <Slider value={this.state.aMin} valueLabelDisplay="auto" min={0} max={100} onChange={(event, newValue) => this.changeMinMax({aMin: newValue as number})}/>
+                Max: <Slider value={this.state.aMax} valueLabelDisplay="auto" min={0} max={100} onChange={(event, newValue) => this.changeMinMax({aMax: newValue as number})}/>
                 <h5>{this.state.model.bLabel}</h5>
-                Fixed: <Slider value={this.state.bMin} min={0} max={100} onChange={(event, newValue) => this.changeMinMax({bMin: newValue as number, bMax: newValue as number})}/>
-                Min: <Slider value={this.state.bMin} min={0} max={100} onChange={(event, newValue) => this.changeMinMax({bMin: newValue as number})}/>
-                Max: <Slider value={this.state.bMax} min={0} max={100} onChange={(event, newValue) => this.changeMinMax({bMax: newValue as number})}/>                    
+                Fixed: <Slider value={this.state.bMin} valueLabelDisplay="auto" min={0} max={100} onChange={(event, newValue) => this.changeMinMax({bMin: newValue as number, bMax: newValue as number})}/>
+                Min: <Slider value={this.state.bMin} valueLabelDisplay="auto" min={0} max={100} onChange={(event, newValue) => this.changeMinMax({bMin: newValue as number})}/>
+                Max: <Slider value={this.state.bMax} valueLabelDisplay="auto" min={0} max={100} onChange={(event, newValue) => this.changeMinMax({bMax: newValue as number})}/>                    
             </CardContent>
             </Card>
         )

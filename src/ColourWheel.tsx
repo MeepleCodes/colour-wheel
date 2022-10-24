@@ -22,6 +22,7 @@ export type ColourWheelProps = {
   bMax?: number;
   swatchSize?: number;
   swatches?: Swatch[];
+  swatchLabels?: boolean;
 }
 
 const DEFAULT_SIZE = 300;
@@ -162,6 +163,7 @@ export class ColourWheel extends React.Component<ColourWheelProps> {
       swatches = [], 
       model, 
       swatchSize = 20,
+      swatchLabels = true,
       aMin,
       aMax,
       bMin,
@@ -201,21 +203,27 @@ export class ColourWheel extends React.Component<ColourWheelProps> {
         {
           // We could use styled-components to remove the explicit width/height everywhere, but this works for now
           // Angle is offset by 45 degrees as the border-radiuses mean our "horizontal" starts out going bottom-left to top-right
-          details.map(swatch => <Tooltip open={true} 
-            key={swatch.name}
-            arrow
-            placement="right"
-            // title={`${swatch.name}: angle=${swatch.angle * 360 / (Math.PI * 2)}, HWB=${swatch.inModel}`}
-            // title={`${swatch.name} a:${swatch.aDelta} b: ${swatch.bDelta} (${swatch.inModel})`}
-            title={swatch.name}
-            >
-              <div
-                className={"swatch " + swatch.oob} 
-                
-                
-                
-                style={{transform: `rotate(${swatch.angle + Math.PI/4}rad)`, left: swatch.left, top: swatch.top, backgroundColor: swatch.colour, width: swatchSize, height: swatchSize}}/>
-            </Tooltip>)
+          details.map(swatch => {
+            const dot = <div
+            className={"swatch " + swatch.oob} 
+            style={{transform: `rotate(${swatch.angle + Math.PI/4}rad)`, left: swatch.left, top: swatch.top, backgroundColor: swatch.colour, width: swatchSize, height: swatchSize}}/>;
+            if(swatchLabels) {
+              return (
+                <Tooltip open={true} 
+                  key={swatch.name}
+                  arrow
+                  placement="right"
+                  // title={`${swatch.name}: angle=${swatch.angle * 360 / (Math.PI * 2)}, HWB=${swatch.inModel}`}
+                  // title={`${swatch.name} a:${swatch.aDelta} b: ${swatch.bDelta} (${swatch.inModel})`}
+                  title={swatch.name}
+                  >
+                    {dot}
+                </Tooltip>
+              );
+            } else {
+              return dot;
+            }
+          })
         }
         </>
       </div>

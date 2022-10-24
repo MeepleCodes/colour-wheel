@@ -8,13 +8,13 @@ import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 
 import { WheelViewer } from './WheelViewer';
-import { RouterProvider } from 'react-router';
+import { Navigate, RouterProvider } from 'react-router';
 import { createBrowserRouter } from 'react-router-dom';
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <WheelViewer/>
+    element: <Navigate replace to="/JCh" />
   },
   {
     path: "/:model",

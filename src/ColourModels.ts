@@ -355,6 +355,11 @@ export const JChModel: ColourModel = {
     description: "CIECAM02 lightness/chroma/hue using NPM color-calculus module",
     aLabel: "Lightness",
     bLabel: "Chroma",
+    scaleDefaults: {
+        aMin: 50,
+        aMax: 50,
+        bMax: 69
+    },
     generateRGB: (angle: number, distance: number, scaling: RadialScaling) => {
         var h = angle * 360;
         var {a: J, b: C} = scaleAB(distance, scaling);

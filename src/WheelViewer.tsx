@@ -10,7 +10,6 @@ import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import Slider from '@mui/material/Slider';
 import Switch from '@mui/material/Switch';
-import Typography from '@mui/material/Typography';
 
 import { ColourWheel } from './ColourWheel';
 import { ALL_MODELS, ColourModel, getModelDefaults, getModelFromCode, HSLModel } from './ColourModels';
@@ -28,7 +27,7 @@ const noSwatchSet: SwatchSet = {
 const ALL_SWATCHESETS = [noSwatchSet, goldenFluidAcrylicSetThick, goldenFluidAcrylicSetThin, goldenHeavyBodyModernMixingSetThick, goldenHeavyBodyModernMixingSetThin, uniqueHues];
 function getSwatchSetByName(name?: string) {
     // Somewhat clunky way of doing array.get(index, default)
-    return [...ALL_SWATCHESETS.filter(s => s.name == name), noSwatchSet][0];
+    return [...ALL_SWATCHESETS.filter(s => s.name === name), noSwatchSet][0];
 }
 /**
  * Current state of the wheel viewer.
@@ -73,9 +72,9 @@ function encodeSearchParams(state: ViewerState): string {
     const defaults = getDefaultState(state.model);
     console.log("Search encoding non-default state from", state, defaults);
     return new URLSearchParams(Object.fromEntries(
-        Object.entries(state).
-            filter(([k, v]) => k !== "model" && v !== defaults[k]).
-            map(([k, v]) => [k, k == "swatchSet" ? (v as SwatchSet).name : v.toString()])
+        Object.entries(state)
+            .filter(([k, v]) => k !== "model" && v !== defaults[k])
+            .map(([k, v]) => [k, k === "swatchSet" ? (v as SwatchSet).name : v.toString()])
         )).toString();
 }
 function getDefaultState(model?: ColourModel): ViewerState {
@@ -112,9 +111,9 @@ function getStateReducer(nav: NavigateFunction,  params: Readonly<Params<string>
             }
             case Actions.MODEL_PARAMS: {
                 const actionParamsAsState = Object.fromEntries(
-                    Object.entries(action).
-                        filter(([k]) => k !== "action").
-                        map(([k, v]) => [k, k == "swatchSet" ? getSwatchSetByName(action.swatchSet) : v])
+                    Object.entries(action)
+                        .filter(([k]) => k !== "action")
+                        .map(([k, v]) => [k, k === "swatchSet" ? getSwatchSetByName(action.swatchSet) : v])
                 );
                 const newState = {...modState, ...actionParamsAsState};
                 let searchParams = encodeSearchParams(newState);
@@ -147,7 +146,7 @@ function addRouteToState(state: ViewerState, params: Readonly<Params<string>>, s
         if(searchParams.has(k)) modState[k] = parseInt(searchParams.get(k)!, 10);
     }
     for(const k of boolStateParams) {
-        if(searchParams.has(k)) modState[k] = searchParams.get(k)?.toLowerCase() == "true";
+        if(searchParams.has(k)) modState[k] = searchParams.get(k)?.toLowerCase() === "true";
     }
     if(searchParams.has("swatchSet")) modState.swatchSet = getSwatchSetByName(searchParams.get("swatchSet")!);
     return modState;

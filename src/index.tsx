@@ -14,10 +14,14 @@ import { createBrowserRouter } from 'react-router-dom';
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Navigate replace to="/JCh" />
+    element: <Navigate replace to="/colour-wheel/JCh" />
   },
   {
-    path: "/:model",
+    path: "/colour-wheel/",
+    element: <Navigate replace to="/colour-wheel/JCh" />
+  },
+  {
+    path: "/colour-wheel/:model",
     element: <WheelViewer/>
   }
 ])

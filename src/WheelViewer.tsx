@@ -100,7 +100,7 @@ function getStateReducer(nav: NavigateFunction,  params: Readonly<Params<string>
                     // If we change model, reset all parameters to model defaults
                     // then take any we might've passed in as well
                     const newState = {...modState, ...getModelDefaults(newModel), model: newModel};
-                    nav({pathname: `../${newModel.code}`, search: encodeSearchParams(newState)}, {replace: false});
+                    nav({pathname: `/colour-wheel/${newModel.code}`, search: encodeSearchParams(newState)}, {replace: false});
                     return newState;
                 } else {
                     // Do nothing if just the model changes

@@ -2,13 +2,19 @@
     position: relative;
 }
 div.swatch {
-    border: 1px solid black;
-    border-radius: 100%;
     position: absolute;
 }
-div.swatch.inside {
-    border-radius: 100% 100% 100% 0;
-}
-div.swatch.outside {
-    border-radius: 100% 0 100% 100%;
-}
+    div.swatch div.dot {
+        border: 1px solid black;
+        border-radius: 100%;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+    }
+    div.swatch div.dot.inside {
+        border-radius: 100% 100% 100% 0;
+    }
+    div.swatch div.dot.outside {
+        border-radius: 100% 0 100% 100%;
+    }
+    

@@ -12,7 +12,7 @@ import Slider from '@mui/material/Slider';
 import Switch from '@mui/material/Switch';
 
 import { ColourWheel } from './ColourWheel';
-import { ALL_MODELS, ColourModel, getModelDefaults, getModelFromCode, HSLModel } from './ColourModels';
+import { ALL_MODELS, ColourModel, getModelDefaults, getModelFromCode, HSLModel, RadialScaling } from './ColourModels';
 import { goldenFluidAcrylicSetThick, goldenFluidAcrylicSetThin, goldenHeavyBodyModernMixingSetThick, goldenHeavyBodyModernMixingSetThin } from './paints/GoldenPalettes';
 import { uniqueHues } from './paints/UniqueHues';
 import { SwatchSet } from './paints/Swatch';
@@ -31,24 +31,16 @@ function getSwatchSetByName(name?: string) {
 }
 /**
  * Current state of the wheel viewer.
- * 
- * I'd like to define this as {model: ..., rings: ..., slices: ...} & RadialScaling
- * but that breaks the key detection in the generic typing of of setState(), despite
- * the resultant types being identical as far as I can tell.
  */
 type ViewerState = {
     model: ColourModel,
     swatchSet: SwatchSet,
     rings: number,
     slices: number,
-    aMin: number,
-    aMax: number,
-    bMin: number,
-    bMax: number,
     fill: boolean,
     gamutWarnings: boolean,
     swatchLabels: boolean
-}
+} & RadialScaling;
 type ViewerProps = {
     model?: string;
 }
@@ -137,8 +129,10 @@ function getStateReducer(nav: NavigateFunction,  params: Readonly<Params<string>
  */
 function addRouteToState(state: ViewerState, params: Readonly<Params<string>>, searchParams: URLSearchParams) {
     let modState = {...state};
-    if(params.model !== undefined) modState.model = getModelFromCode(params.model) || HSLModel;
-    
+    if(params.model !== undefined) {
+        modState.model = getModelFromCode(params.model) || HSLModel;
+        modState = {...modState, ...getDefaultState(modState.model)};
+    }
     // TODO: Extract this to decodeSearchParams, apply min/max/step restrictions to each property
     const intStateParams = ["slices", "rings", "aMin", "aMax", "bMin", "bMax"];
     const boolStateParams = ["gamutWarnings", "fill"];
@@ -179,7 +173,7 @@ export function WheelViewer({model}: ViewerProps) {
                 <FormLabel id="colour-model-label">Colour model</FormLabel>
                 <Select labelId="colour-model-label" value={modState.model.code} onChange={e => dispatch({action: Actions.MODEL, model: e.target.value})}>
                     {ALL_MODELS.map(model =>
-                        <MenuItem value={model.code}>{model.name}</MenuItem>
+                        <MenuItem value={model.code} key={model.code}>{model.name}</MenuItem>
                     )}
                 </Select>
             </FormControl>
@@ -187,7 +181,7 @@ export function WheelViewer({model}: ViewerProps) {
                 <FormLabel id="colour-swatchset-label">Show swatches</FormLabel>
                 <Select labelId="colour-swatchset-label" value={modState.swatchSet?.name} onChange={e => dispatch({action: Actions.MODEL_PARAMS, swatchSet: e.target.value})}>
                     {ALL_SWATCHESETS.map(set =>
-                        <MenuItem value={set.name}>{set.name}</MenuItem>
+                        <MenuItem value={set.name} key={set.name}>{set.name}</MenuItem>
                     )}
                 </Select>
             </FormControl>

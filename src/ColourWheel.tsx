@@ -2,12 +2,98 @@ import { lab_to_sRGB } from 'color-calculus';
 import { rgb } from 'color-convert';
 import { RGB } from 'color-convert/conversions';
 import React from 'react';
-import { ColourModel, getModelDefaults, RadialScaling } from './ColourModels';
-import { Swatch } from './paints/Swatch';
+import { ColourLocation, ColourModel, getModelDefaults, RadialScaling } from './ColourModels';
+import { getSwatchID, Swatch } from './paints/Swatch';
 
-import Tooltip from '@mui/material/Tooltip';
+import { styled } from '@mui/material/styles';
+import Accordion, { AccordionProps } from '@mui/material/Accordion';
+import AccordionSummary,  {AccordionSummaryProps } from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import Grid from '@mui/material/Grid';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 import './ColourWheel.css';
+
+type SwatchDetails = {
+  left: number;
+  top: number;
+  colour: string;
+  angle: number;
+  oob: string;
+  aDelta: number;
+  bDelta: number;
+  inModel: [number, number, number]
+} & Swatch;
+
+function getSwatchDetails(swatch: Swatch, location: ColourLocation, wheelSize: number, swatchSize: number): SwatchDetails {
+  let {angle, distance, aDelta, bDelta, inModel} = location;
+  let angleRad = angle * Math.PI * 2;
+  let clampedDistance = Math.max(0, Math.min(1, distance));
+  // Because of the flipped canvas, our angles start from the +ve X axis and wind anticlockwise
+  let x = clampedDistance * wheelSize/2 * Math.cos(angleRad);
+  let y = clampedDistance * wheelSize/2 * Math.sin(angleRad);
+  let hex = "#" + rgb.hex(lab_to_sRGB(swatch.lab).map(v => Math.max(0, Math.min(255, v))) as RGB);        
+  return {
+    ...swatch,
+    left: x + wheelSize/2 - swatchSize/2,
+    top: wheelSize/2 - y - swatchSize/2,
+    colour: hex,
+    // Invert angle into CSS world (where it's clockwise again)
+    angle: -angleRad,
+    inModel: inModel,
+    aDelta,
+    bDelta,
+    oob: distance < 0 ? "inside" : distance > 1 ? "outside" : ""
+  }
+}
+
+// div.swatch .tooltip {
+//   position: absolute;
+//   top: 0;
+//   left: 25px;
+//   opacity: 0.9;
+//   background: rgba(97, 97, 97, 0.92);
+//   color: white;
+//   border-radius: 4px;
+// }
+// div.swatch .tooltip.Mui-expanded {
+//   z-index: 10;
+// }
+const SwatchLabel = styled((props: AccordionProps) => (
+  <Accordion disableGutters {...props} />
+))(({ theme }) => ({
+  position: "absolute",
+  left: "calc(100% + 5px)",
+  color: "#fff",
+  background: "rgba(0, 0, 0, 0.54)",
+  fontSize: "0.8rem",
+  borderRadius: theme.spacing(0.5),
+  zIndex: theme.zIndex.tooltip,
+  '&.Mui-expanded': {
+    zIndex: theme.zIndex.tooltip + 100,
+  },
+}));
+
+const SwatchSummary = styled((props: AccordionSummaryProps) => (
+  <AccordionSummary
+    expandIcon={<ExpandMoreIcon />}
+    {...props}
+  />
+))(({ theme }) => ({
+  whiteSpace: "nowrap",
+  minHeight: 0,
+  margin: 0,
+  padding: `0 0 0 ${theme.spacing(1)}`,
+  '& .MuiAccordionSummary-content': {
+    margin: 0
+  },
+}));
+
+const SwatchDetails = styled(AccordionDetails)(({ theme }) => ({
+  padding: theme.spacing(1),
+  // borderTop: '1px solid rgba(0, 0, 0, .125)',
+}));
+
 
 export type ColourWheelProps = {
   size?: number;
@@ -155,8 +241,6 @@ export class ColourWheel extends React.Component<ColourWheelProps> {
 
   }
 
-
-
   render() {
     const {
       size = DEFAULT_SIZE, 
@@ -174,27 +258,7 @@ export class ColourWheel extends React.Component<ColourWheelProps> {
     if(model.locateLAB && !SWATCHES_CANVAS) {
       // Need a const to capture to stop typescript worrying about the lambda in map()
       const lab = model.locateLAB;
-      details = swatches.map(swatch => {
-        let {angle, distance, aDelta, bDelta, inModel} = lab(swatch.lab, scaling);
-        let angleRad = angle * Math.PI * 2;
-        let clampedDistance = Math.max(0, Math.min(1, distance));
-        // Because of the flipped canvas, our angles start from the +ve X axis and wind anticlockwise
-        let x = clampedDistance * size/2 * Math.cos(angleRad);
-        let y = clampedDistance * size/2 * Math.sin(angleRad);
-        let hex = "#" + rgb.hex(lab_to_sRGB(swatch.lab).map(v => Math.max(0, Math.min(255, v))) as RGB);        
-        return {
-          left: x + size/2 - swatchSize/2,
-          top: size/2 - y - swatchSize/2,
-          colour: hex,
-          name: swatch.name,
-          // Invert angle into CSS world (where it's clockwise again)
-          angle: -angleRad,
-          inModel: inModel,
-          aDelta,
-          bDelta,
-          oob: distance < 0 ? "inside" : distance > 1 ? "outside" : ""
-        }
-      });
+      details = swatches.map(swatch => getSwatchDetails(swatch, lab(swatch.lab, scaling), size, swatchSize));
     }
     return(
       <div className="wheel-wrapper">
@@ -204,40 +268,52 @@ export class ColourWheel extends React.Component<ColourWheelProps> {
           // We could use styled-components to remove the explicit width/height everywhere, but this works for now
           // Angle is offset by 45 degrees as the border-radiuses mean our "horizontal" starts out going bottom-left to top-right
           details.map(swatch => {
-            const dot = <div
-            className={"swatch " + swatch.oob} 
-            style={{transform: `rotate(${swatch.angle + Math.PI/4}rad)`, left: swatch.left, top: swatch.top, backgroundColor: swatch.colour, width: swatchSize, height: swatchSize}}/>;
-            if(swatchLabels) {
-              return (
-                <Tooltip open={true} 
-                  key={swatch.name}
-                  arrow
-                  placement="right"
-                  // title={`${swatch.name}: angle=${swatch.angle * 360 / (Math.PI * 2)}, HWB=${swatch.inModel}`}
-                  // title={`${swatch.name} a:${swatch.aDelta} b: ${swatch.bDelta} (${swatch.inModel})`}
-                  title={swatch.name}
-                  >
-                    {dot}
-                </Tooltip>
-              );
-            } else {
-              return dot;
-            }
+            return <div
+              key={getSwatchID(swatch)}
+              className="swatch"
+              style={{left: swatch.left, top: swatch.top, width: swatchSize, height: swatchSize}}>
+                <div className={"dot " + swatch.oob}
+                  style={{transform: `rotate(${swatch.angle + Math.PI/4}rad)`, backgroundColor: swatch.colour}}/>
+              <SwatchLabel>
+                <SwatchSummary
+                  aria-controls={`${getSwatchID(swatch)}-content`}
+                  id={`${getSwatchID(swatch)}-header`}
+                >
+                  {swatch.name}
+                </SwatchSummary>
+                <SwatchDetails>
+                  <Grid container>
+                    <Grid xs={12}>CIEL*A*B*</Grid>
+                    <Grid xs={1}/>
+                    {swatch.lab.map(v => <Grid xs={3} key={v}>{v}</Grid>)}
+                    <Grid xs={12}>{model.code}</Grid>
+                    <Grid xs={1}/>
+                    {swatch.inModel.map(v => <Grid xs={3} key={v}>{v.toFixed(2)}</Grid>)}
+                  </Grid>
+                </SwatchDetails>
+              </SwatchLabel>
+            </div>;
+            
+            // if(swatchLabels) {
+            //   return (
+            //     <Tooltip open={true} 
+            //       key={swatch.name}
+            //       arrow
+            //       placement="right"
+            //       // title={`${swatch.name}: angle=${swatch.angle * 360 / (Math.PI * 2)}, HWB=${swatch.inModel}`}
+            //       // title={`${swatch.name} a:${swatch.aDelta} b: ${swatch.bDelta} (${swatch.inModel})`}
+            //       title={swatch.name}
+            //       >
+            //         {dot}
+            //     </Tooltip>
+            //   );
+            // } else {
+            //   return dot;
+            // }
           })
         }
         </>
       </div>
     )
   }
-}
-type SwatchDetails = {
-  left: number;
-  top: number;
-  colour: string;
-  name: string;
-  angle: number;
-  oob: string;
-  aDelta: number;
-  bDelta: number;
-  inModel: [number, number, number]
 }

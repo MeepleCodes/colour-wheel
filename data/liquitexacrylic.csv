@@ -1,0 +1,101 @@
+#,Color name,series #,hue,Value,Chroma,lightfastness “I”,opacity,pigment*,pigment name
+116,Alizarin crimson hue permanent,2,3.30r,2.86,3.94,i,tp,m,"quinacridone (pr 206), quinacridone (pr 202)"
+660,bright Aqua green,1,4.88bg,6.03,9.04,i,o,m,"chlorinated copper phthalocyanine (pg 7), copper phthalocyanine (pb 15), titanium dioxide (pw6)"
+570,brilliant blue,1A,7.91b,5.08,9.61,i,o,m,"copper phthalocyanine (pb 15:3), chlorinated copper phthalocyanine (pg 7), titanium dioxide (pw6)"
+590,brilliant purple,1,1.73p,5.01,11.15,ii,o,m,"carbazole dioxozine (pv 23 rs), titanium dioxide (pw6)"
+840,brilliant yellow green,1,6.22gy,8.07,10.07,ii,tl,m,"phthalocyanine green (pg 7), titanium dioxide (pw6), Arylide yellow 10g (py 3), Arylide yellow fgl (py 97)"
+530,bronze yellow,1,1.77 y,5.26,4.9,i,o,m,"synthetic iron oxide yellow (py 42), synthetic iron oxide red (pr 101), synthetic iron oxide black (pblk11)"
+127,burnt sienna,1,0.2yr,3.43,4.16,i,o,s,calcined natural iron oxide (pbr 7)
+128,burnt umber,1,4.22yr,2.63,0.92,i,o,s,calcined natural iron oxide containing manganese (pbr 7)
+150,cadmium orange,4,3.06yr,6.86,14.99,i,o,s,cadmium orange (po 20)
+720,cadmium orange hue,2,3.98yr,6.98,13.01,i,tl,m,"perninone orange (po 43 dl), titanium white (pw6), diarylide yellow hr70 (py 83)"
+311,cadmium red deep hue,2,5.00r,3.29,8.25,i,o,m,"naphthol carbamide (pr 170 f3rk), quinacridone violet b (pv 19)"
+152,cadmium red light,5,7.67r,4.96,14.11,i,o,s,cadmium red (pr 108)
+510,cadmium red light hue,2,7.50r,5.01,13.4,i,tl,m,"naphthol As-ol (pr 9), Arylide yellow 5gx (py 74 lf), titanium dioxide (pw6)"
+154,cadmium red medium,5,6.28r,4.48,13.82,i,o,s,cadmium red (pr 108)
+151,cadmium red medium hue,2,6.25r,4.3,13.59,i,o,m,"naphthol crimson (pr 170 f3rk), Arylide yellow fgl (py97)"
+163,cadmium yellow deep hue,2,8.98yr,7.43,12.46,i,o,m,"diarylide yellow (py 83 hr 70), Arylide yellow 5gx (py 74 lf), titanium dioxide (pw6)"
+160,cadmium yellow light,3,7.63y,8.81,12.94,i,o,s,cadmium yellow (py 35)
+159,cadmium yellow light hue,3,6.85y,8.73,11.9,i,o,s,bismuth vanadate (py 184)
+161,cadmium yellow medium,3,2.39y,8.27,14.21,i,o,s,cadmium yellow (py 35)
+830,cadmium yellow medium hue,1A,2.11y,8.01,12.78,i,tl,m,"Arylide yellow fgl (py 97), diarylide yellow (py 83 hr 70), titanium dioxide (pw6)"
+164,cerulean blue,3,3.29pb,3.96,9.25,i,o,s,cobalt chromite (pb 36)
+470,cerulean blue hue,2,3.01pb,4.05,9.52,i,o,m,"complex silicate of sodium and Aluminum with sulfur (pb 29), chlorinated copperphthalocyanine (pg 7), titanium dioxide (pw6), copperphthalocyanine (pb 15:3)"
+166,chromium oxide green,2,9.49gy,4.19,4.25,i,o,s,Anhydrous chromium sesquioxide (pg 17)
+170,cobalt blue,4,6.94pb,3.33,11.43,i,o,s,oxides of cobalt and Aluminum (pb 28)
+381,cobalt blue hue,1A,7.48pb,3.09,12.9,i,o,m,"complex silicate of sodium and Aluminum with sulfur (pb 29), titanium dioxide (pw6)"
+171,cobalt green,4,4.93bg,3.72,4.56,i,o,s,light green oxide (pg 50)
+172,cobalt teal,4,8.31bg,5.89,9.16,i,o,s,light green oxide (pg 50)
+169,cobalt turquoise,4,8.26bg,4.16,5.79,i,o,s,cobalt chromite (pb 36)
+300,deep magenta,3,6.54rp,3.02,5.59,i,tl,m,"quinacridone magenta (pr 122), quinacridone violet (pv 19 dl), titanium dioxide (pw6)"
+115,deep violet,3,1.33r,2.56,2.76,i,tl,m,"quinacridone magenta (pr 122), quinacridone violet (pv 19 dl)"
+186,dioxazine purple,2,9.44r,2.42,0.49,ii,tp,s,carbazole dioxozine (pv 23 rs)
+450,emerald green,2,3.79g,4.24,7.98,i,o,m,"chlorinated copper phthalocyanine (pg 7), Arylide yellow fgl (py 97), titanium dioxide (pw6)"
+350,green deep permanent,2,6.81g,3.07,3.4,i,o,m,"phthalocyanine green (pg 7), titanium dioxide (pw6), Arylide yellow fgl (py 97)"
+325,green gold,4,7.93 y,3.87,3.26,nr,tl,s,Azo methine copper complex (py 129)
+225,hooker’s green,1A,7.73bg,2.47,0.38,i,tl,m,"carbon black (pbk 7), phthalocyanine green (pg 7), deep hue permanent Arylide yellow 5gx (py 74)"
+224,hooker’s green hue permanent,1A,7.40 gy,2.95,2.27,i,tl,m,"chlorinated copper phthalocyanine (pg 7), tetrachloroisoindolanone (py 110)"
+322,indanthrene blue,3,6.44 p,2.37,1.55,i,tp,s,Anthraquinone blue (pb 60)
+324,indian yellow,2,8.24 yr,6.34,11.21,i,tl,s,isoindolanone (py 139)
+237,iridescent Antique gold,2A,—,—,—,nr,o,m,mica coated with titanium dioxide and iron oxide
+234,iridescent bright gold,2A,—,—,—,nr,tl,m,mica coated with titanium dioxide and iron oxide
+236,iridescent bright silver,2A,—,—,—,nr,tl,m,"mica coated with titanium dioxide and iron oxide, stainless steel"
+229,iridescent rich bronze,2A,—,—,—,nr,o,m,mica coated with titanium dioxide and iron oxide
+230,iridescent rich copper,2A,—,—,—,nr,o,m,mica coated with titanium dioxide and iron oxide
+235,iridescent rich gold,2A,—,—,—,nr,o,m,mica coated with titanium dioxide and iron oxide
+239,iridescent rich silver,2A,—,—,—,nr,o,m,"bismuth oxychloride (pw14), synthetic iron oxide black (pbk 11)"
+238,iridescent white,2A,—,—,—,nr,tp,s,mica coated with titanium dioxide
+244,ivory black,1,1.58pb,2.28,0.09,i,o,s,bone black (pbk 9)
+770,light blue permanent,1,4.84b,6.99,7.78,i,o,m,"copper phthalocyanine (pb 15), chlorinated copper phthalocyanine (pg 7), titanium dioxide (pw6)"
+680,light blue violet,1A,6.54pb,6.03,10.68,i,o,m,"complex silicate of sodium and Aluminum with sulfur (pb 29), titanium dioxide (pw6)"
+650,light emerald green,3,0.90g,6.25,10.07,i,o,m,"chlorinated phthalocyanine (pg 7), Arylide yellow fgl (py 97), titanium dioxide (pw6)"
+312,light green permanent,2,1.42g,5.09,10.24,i,o,m,"chlorinated copper phthalocyanine (pg 7), Arylide yellow fgl (py 97), titanium dioxide (pw6)"
+810,light portrait pink,1A,6.42r,8.04,5.67,i,o,m,"naphthol As (pr 188), benzimidazolone (po 36), titanium dioxide (pw6)"
+275,manganese blue hue,3,3.86 pb,3.88,9.46,i,o,m,"copper phthalocyanine (pb 15), chlorinated copper phthalocyanine (pg 7), titanium dioxide (pw6)"
+276,mars black,1,4.79rp,2.44,0.04,i,o,s,synthetic black iron oxide (pbk 11)
+500,medium magenta,1A,2.84rp,4.95,12.59,i,o,m,"quinacridone magenta (pr 122), titanium dioxide (pw6)"
+292,naphthol crimson,2,5.64r,3.85,11.72,ii,tp,s,naphthol carbamide (pr 170 f5rk)
+294,naphthol red light,2,7.36r,4.56,13.56,i,tp,s,naphthol As-ol (pr 9)
+601,naples yellow hue,2,9.90 yr,7.58,8.16,nr,o,m,"chrome titanium yellow (pbr 24), titanium white (pw6)"
+599,neutral gray value 5,1,9.97bg,5.03,0.15,i,o,m,"bone black (pbk 9), raw umber (pbr 7), titanium/mixing gray dioxide (pw6)"
+436,parchment,1,7.22y,8.32,1.68,i,o,m,"carbon black (pbk 7), phthalocyanine green (pg 7), titanium dioxide (pw6), iron oxide yellow (py 42)"
+310,payne’s gray,1,3.62pb,2.36,0.31,i,o,m,"ultramarine blue (pb 29), bone black (pbk 9), ultramarine violet (pv 15)"
+316,phthalocyanine blue,1A,0.14p,2.37,4.6,i,tp,s,copper phthalocyanine (pb 15) (green shade)
+314,phthalocyanine blue,2,9.03 bp,2.27,4.09,i,tp,s,phthalocyanine blue epsilon (pb15:6) (red shade)
+317,phthalocyanine green,1A,9.88bg,2.57,2.23,i,tp,s,chlorinated copper phthalocyanine (pg 7) (blue shade)
+319,phthalocyanine green,1A,0.43bg,2.74,3.36,i,tp,s,chlorinated and brominated copper phthalocyanine (pg 36) (yellow shade)
+391,prism violet,2,9.77 p,2.5,1.35,ii,tp,m,"dioxazine carbazol (pv 23), quinacridone magenta (pr 122)"
+320,prussian blue hue,2,9.10bp,2.29,1.05,ii,tl,m,"copper phthalocyanine (pb 15:3), carbazole dioxozine (pv 23), synthetic black iron oxide (pbk 11)"
+326,pyrrole crimson,4,3.53 r,3.04,7.36,nr,o,s,pyrrol crimson (pr 264)
+323,pyrrole orange,4,9.06r,5.41,14.62,nr,tl,s,pyrrol orange (po 73)
+321,pyrrole red,4,6.16r,4.23,13.86,i,o,s,pyrrol red (pr 254)
+118,quinacridone blue violet,3,8.66rp,2.47,1.71,i,tp,s,quinacridone violet b (pv 19)
+108,quinacridone burnt orange,3,5.93r,2.91,2.48,i,tl,s,quinacridone (pr 206)
+110,quinacridone crimson,3,3.98r,3.58,9.28,i,tp,s,gamma quinacridone red (pv 19)
+114,quinacridone magenta,3,9.25rp,3.02,5.82,i,tp,s,quinacridone magenta (pr 122)
+112,quinacridone red,3,5.43r,4.11,10.77,i,tp,s,quinacridone red gamma (pr 209)
+109,quinacridone red-orange,3,5.48r,3.18,6.88,i,tp,s,quinacridone/pyrrolopyrrol
+330,raw sienna,1,4.98yr,4.48,5.44,i,o,s,natural iron oxide (pbr 7)
+331,raw umber,1,9.38yr,2.91,1.11,i,o,s,natural iron oxide containing manganese (pbr 7)
+335,red oxide,1A,9.01r,4,7.47,i,o,s,synthetic red iron oxide (pr 101)
+315,sap green permanent,2,8.48 gy,2.9,2.06,i,tl,m,"isoindolinone (py 139), phthalocyanine blue (pb 15:3), synthetic iron oxide black (pbk 11)"
+432,titanium white,1,—,—,—,i,o,s,titanium dioxide (pw6)
+129,transparent burnt sienna,3,7.33 r,3.12,2.75,i,tp,s,synthetic iron oxide red (pr 101)
+130,transparent burnt umber,2,6.35 yr,2.72,0.19,i,tp,m,"synthetic iron oxide yellow (py 42), synthetic iron oxide red (pr 101), synthetic iron oxide black (pbk 11)"
+430,transparent mixing white,1,2.52pb,9,0.71,i,tp,s,zinc white (pw4)
+332,transparent raw sienna,3,6.70 yr,4.68,5.49,i,tp,s,synthetic iron oxide yellow (py 42)
+333,transparent raw umber,2,4.28 yr,2.81,0.17,i,tp,m,"synthetic iron oxide yellow (py 42), synthetic iron oxide red (pr 101), synthetic iron oxide black (pbk 11)"
+327,transparent viridian hue,2,6.78 bg 2.72,,2.72,i,tl,s,chlorinated copper phthalocyanine (pg 7)
+730,turner’s yellow,2,2.08y,7.04,9.89,ii,tl,m,"Arylide yellow 10g (py 3), iron oxide yellow (py 42)"
+561,turquoise deep,2,6.66pb,2.38,2.2,i,tl,m,"copper phthalocyanine (pb 15:3), chlorinated copper phthalocyanine (pg 7)"
+380,ultramarine blue (green shade),1A,9.32 pb,2.28,7.29,i,tl,s,complex silicate of sodium and Aluminum with sulfur (pb 29)
+382,ultramarine blue (red shade),1A,9.4bp,2,8,i,o,s,complex silicate of sodium and Aluminum with sulfur (pb 29)
+434,unbleached titanium,1,0.93 y,8.03,2.73,i,o,m,"titanium white (pw6), synthetic iron oxide yellow (py 42), synthetic iron oxide red (pr 101), synthetic iron oxide black (pbk 11)"
+392,van dyke red,2,1.97yr,2.69,1.38,nr,tl,s,benzimidazolone (pbr 25)
+398,viridian hue permanent,1A,3.69bg,2.6,0.98,i,o,m,"raw umber (pbr 7), phthalocyanine green (pg 7)"
+740,vivid lime green,1A,7.73gy,7.1,10.38,i,o,m,"Arylide yellow fgl (py 97), chlorinated copper phthalocyanine (pg 7) , titanium dioxide (pw6)"
+620,vivid red orange,3,0.78yr,5.45,12.74,nr,tp,m,"pyrrol orange (po 73), isoindolanone (py 139)"
+411,yellow light hansa,1A,0.48gy,8.6,10.97,ii,tp,s,Arylide yellow 10g (py 3)
+412,yellow medium Azo,2,6.55y,7.98,11.69,i,tp,s,Arylide yellow 5gx (py 74 lf)
+414,yellow orange Azo,2,8.58yr,7.12,13.04,i,tp,s,diarylide yellow (py 83 hr 70)
+416,yellow oxide,1,0.39y,6.18,7.5,i,o,s,synthetic hydrated iron oxide (py 42)

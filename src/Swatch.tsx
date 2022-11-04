@@ -2,23 +2,67 @@ import { lab_to_sRGB } from "color-calculus";
 import { ColourModel, RadialScaling, rgbToClampedHex } from "./ColourModels";
 import { getNamedColourID, NamedColour } from "./colours/Colours";
 
-import React from 'react';
+import React, { useState } from 'react';
 
-import { styled } from '@mui/material/styles';
+import { createTheme, styled, Theme, ThemeProvider } from '@mui/material/styles';
 import Accordion, { AccordionProps } from '@mui/material/Accordion';
 import AccordionSummary,  {AccordionSummaryProps } from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Typography from '@mui/material/Typography';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import NorthIcon from '@mui/icons-material/North';
+import SouthIcon from '@mui/icons-material/South';
+import EastIcon from '@mui/icons-material/East';
+import WestIcon from '@mui/icons-material/West';
 
-const SwatchLabel = styled((props: AccordionProps) => (
-  <Accordion disableGutters {...props} />
-))(({ theme }) => ({
+
+
+enum LabelPosition {
+  RIGHT,
+  LEFT,
+  ABOVE,
+  BELOW
+}
+const SwatchTheme = createTheme({
+  palette: {mode: 'dark'},
+  typography: {
+    fontSize: 10
+  }
+});
+const LabelStyles = [
+  (theme: Theme) => ({ // RIGHT
+    left: `calc(100% + ${theme.spacing(1)})`,
+    top: 0,
+  }),
+  (theme: Theme) => ({ // LEFT
+    right: `calc(100% + ${theme.spacing(1)})`,
+    top: 0
+  }),
+  (theme: Theme) => ({ // ABOVE
+    transform: "translateX(-50%)",
+    left: "50%",
+    top: theme.spacing(-4),
+  }),
+  (theme: Theme) => ({ // BELOW
+    transform: "translateX(-50%)",
+    left: "50%",
+    top: `calc(100% + ${theme.spacing(1)})`,
+  }),
+
+];
+const SwatchLabel = styled(
+  (props: AccordionProps & {position: LabelPosition}) => (
+    <Accordion disableGutters {...props} />
+  ),
+  {
+    name: "SwatchLabel",
+    shouldForwardProp: (prop) => prop !== 'position',
+  })
+(({ theme, position }) => ({
   position: "absolute",
-  left: `calc(100% + ${theme.spacing(1)})`,
-  color: "#fff",
-  background: "rgba(0, 0, 0, 0.74)",
-  fontSize: "0.8rem",
+  background: "rgba(0, 0, 0, 0.74)",  
   borderRadius: theme.spacing(0.5),
   zIndex: theme.zIndex.tooltip,
   '&.Mui-expanded': {
@@ -36,16 +80,18 @@ const SwatchLabel = styled((props: AccordionProps) => (
   '&.Mui-expanded:hover': {
     zIndex: theme.zIndex.tooltip + 110,
   },
+  ...LabelStyles[position](theme)
 }));
 
 const SwatchSummary = styled((props: AccordionSummaryProps) => (
   <AccordionSummary
-    expandIcon={<ExpandMoreIcon sx={{color: "#fff"}} />}
+    expandIcon={<ExpandMoreIcon />}
     {...props}
   />
 ))(({ theme }) => ({
   whiteSpace: "nowrap",
-  minHeight: 0,
+  minHeight: theme.spacing(3),
+  lineHeight: theme.spacing(3),
   margin: 0,
   padding: `0 0 0 ${theme.spacing(1)}`,
   '& .MuiAccordionSummary-content': {
@@ -56,9 +102,6 @@ const SwatchSummary = styled((props: AccordionSummaryProps) => (
 const SwatchDetails = styled(AccordionDetails)(({ theme }) => ({
   padding: theme.spacing(1),
   paddingTop: 0,
-  '& .MuiTypography-caption': {
-    fontSize: "0.6rem"
-  },
   '& .gradient': {
     width: "100%",
     height: 25,
@@ -77,7 +120,6 @@ const SwatchDetails = styled(AccordionDetails)(({ theme }) => ({
     textAlign: "center"
   },
   "& h6": {
-    fontSize: "0.9rem",
     marginTop: theme.spacing(1)
   }
 }));
@@ -104,6 +146,7 @@ export function Swatch(props: SwatchProps) {
         size,
         showLabel
     } = props;
+    let [position, setPosition] = useState<LabelPosition>(LabelPosition.RIGHT);
 
     // Calculate where to place the swatch dot relative to the container, which we do using
     // percentage left/top values
@@ -126,6 +169,7 @@ export function Swatch(props: SwatchProps) {
     const bGrad = model.bGradient ? model.bGradient(location.inModel) : undefined;
 
     const id = getNamedColourID(colour);
+    console.log("Rendering swatch with position", position);
     // We could use styled-components to remove the explicit width/height everywhere, but this works for now
     return <div
       className="swatch"
@@ -135,11 +179,12 @@ export function Swatch(props: SwatchProps) {
         // It's also clockwise (whereas our angles are usually CCW)
           style={{transform: `rotate(${-angleRad + Math.PI/4}rad)`, backgroundColor: hex}}/>
         {showLabel &&
-            <SwatchLabel>
+        <ThemeProvider theme={SwatchTheme}>
+            <SwatchLabel position={position}>
                 <SwatchSummary aria-controls={`${id}-content`} id={`${id}-header`}>
                     {colour.name}
                 </SwatchSummary>
-                <SwatchDetails sx={{minWidth: 160}}>
+                <SwatchDetails>
                 {aGrad && <>
                     <Typography variant="h6">{model.aLabel}</Typography>
                     <div className="gradient" style={{background: `linear-gradient(90deg, ${Array.from({length: GRAD_STOPS}, (_, i) => aGrad.stopFn(i * GRAD_STOP_SIZE)).join(", ")})`}}>
@@ -156,8 +201,31 @@ export function Swatch(props: SwatchProps) {
                 {colour.lab.map(v => Math.round(v * 10)/10).join(", ")}
                 <Typography variant="h6">{model.name}</Typography>
                 {location.inModel.map(v => Math.round(v * 10)/10).join(", ")}
+                <Typography variant="h6">Label position</Typography>
+                <ToggleButtonGroup
+                  value={position}
+                  exclusive
+                  color="secondary"
+                  size="small"
+                  onChange={(_, newPosition) => setPosition(newPosition)}
+                  aria-label="Label location"
+                >
+                  <ToggleButton value={LabelPosition.RIGHT} aria-label="right of swatch">
+                    <EastIcon />
+                  </ToggleButton>
+                  <ToggleButton value={LabelPosition.LEFT} aria-label="left of swatch">
+                    <WestIcon />
+                  </ToggleButton>
+                  <ToggleButton value={LabelPosition.ABOVE} aria-label="above swatch">
+                    <NorthIcon />
+                  </ToggleButton>
+                  <ToggleButton value={LabelPosition.BELOW} aria-label="below swatch">
+                    <SouthIcon />
+                  </ToggleButton>
+                </ToggleButtonGroup>                
                 </SwatchDetails>
             </SwatchLabel>
+          </ThemeProvider>
         }
     </div>;
 }

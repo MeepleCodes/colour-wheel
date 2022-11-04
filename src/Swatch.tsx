@@ -179,11 +179,6 @@ export function Swatch(props: SwatchProps) {
     // And store a css class to add if the real location is outside the wheel
     const dotClassName = location.distance < 0 ? "dot inside" : location.distance > 1 ? "dot outside" : "dot";
 
-    // Set up some gradients
-    const aGrad = model.aGradient(location.inModel);
-    const bGrad = model.bGradient(location.inModel);
-    const angleGrad = model.angleGradient ? model.angleGradient(location.inModel) : undefined;
-
     const id = getNamedColourID(colour);
     console.log("Rendering swatch with position", position);
     // We could use styled-components to remove the explicit width/height everywhere, but this works for now

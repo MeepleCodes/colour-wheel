@@ -203,7 +203,7 @@ export type ModelParams = [number, number, number];
  * Representation of where a spot colour lies in the range
  * of one parameter of a model.
  */
-export type ColourOnGradiant = {
+export type ColourOnGradient = {
     /** Function for generating gradient stops. t will be a percent in range [0, 100] */
     stopFn: (t: number) => string;
     /** How far along the gradient the given colour lies, as a percent in range [0, 100] */
@@ -214,12 +214,13 @@ export interface ColourModel<ParamType = ModelParams> {
     name: string;
     description: string;
     aLabel: string;
-    bLabel: string | null;
+    bLabel: string;
     scaleDefaults?: RadialScalingOpt;
     generateRGB: (angle: number, distance: number, scaling: RadialScaling) => ModelResult;
     locateLAB: (lab: ModelParams, scaling: RadialScaling) => ColourLocation<ParamType>;
-    aGradient: (colour: ModelParams) => ColourOnGradiant;
-    bGradient: (colour: ModelParams) => ColourOnGradiant;
+    aGradient: (colour: ModelParams) => ColourOnGradient;
+    bGradient: (colour: ModelParams) => ColourOnGradient;
+    angleGradient?: (colour: ModelParams) => ColourOnGradient;
 }
 
 export type RadialScaling = {
@@ -289,14 +290,14 @@ export const HSLModel: ColourModel = {
             ...unscaleAB({a: s, b: l}, scaling)
         }        
     },
-    aGradient(colour: ModelParams): ColourOnGradiant {
+    aGradient(colour: ModelParams): ColourOnGradient {
         const [h, s, l] = colour;
         return {
             stopFn: (i) => "#" + convert.hsl.hex([h, i, l]),
             position: s
         }
     },
-    bGradient(colour: ModelParams): ColourOnGradiant {
+    bGradient(colour: ModelParams): ColourOnGradient {
         const [h, s, l] = colour;
         return {
             stopFn: (i) => "#" + convert.hsl.hex([h, s, i]),
@@ -328,14 +329,14 @@ export const HSVModel: ColourModel = {
             ...unscaleAB({a: s, b: v}, scaling)
         }
     },
-    aGradient(colour: ModelParams): ColourOnGradiant {
+    aGradient(colour: ModelParams): ColourOnGradient {
         const [h, s, v] = colour;
         return {
             stopFn: (i) => "#" + convert.hsv.hex([h, i, v]),
             position: s
         }
     },
-    bGradient(colour: ModelParams): ColourOnGradiant {
+    bGradient(colour: ModelParams): ColourOnGradient {
         const [h, s, v] = colour;
         return {
             stopFn: (i) => "#" + convert.hsv.hex([h, s, i]),
@@ -370,14 +371,14 @@ export const HCVModel: ColourModel = {
             ...unscaleAB({a: c, b: g}, scaling)
         }
     },      
-    aGradient(colour: ModelParams): ColourOnGradiant {
+    aGradient(colour: ModelParams): ColourOnGradient {
         const [h, c, g] = colour;
         return {
             stopFn: (i) => "#" + convert.hsv.hex([h, i, g]),
             position: c
         }
     },
-    bGradient(colour: ModelParams): ColourOnGradiant {
+    bGradient(colour: ModelParams): ColourOnGradient {
         const [h, c, g] = colour;
         return {
             stopFn: (i) => "#" + convert.hsv.hex([h, c, i]),
@@ -415,14 +416,14 @@ export const HWBModel: ColourModel = {
             ...unscaleAB({b}, scaling)
         }
     },
-    aGradient(colour: ModelParams): ColourOnGradiant {
+    aGradient(colour: ModelParams): ColourOnGradient {
         const [h, w, b] = colour;
         return {
             stopFn: (i) => "#" + convert.hwb.hex([h, i, b]),
             position: w
         }
     },
-    bGradient(colour: ModelParams): ColourOnGradiant {
+    bGradient(colour: ModelParams): ColourOnGradient {
         const [h, w, b] = colour;
         return {
             stopFn: (i) => "#" + convert.hwb.hex([h, w, i]),
@@ -456,18 +457,25 @@ export const JChModel: ColourModel = {
             ...unscaleAB({a: J, b: C/JCH_CHROMA_SCALE}, scaling)
         }        
     },
-    aGradient(colour: ModelParams): ColourOnGradiant {
+    aGradient(colour: ModelParams): ColourOnGradient {
         const [J, C, h] = colour;
         return {
             stopFn: (i) => rgbToClampedHex(calculus.JCh_to_sRGB(i, C, h)),
             position: J
         }
     },
-    bGradient(colour: ModelParams): ColourOnGradiant {
+    bGradient(colour: ModelParams): ColourOnGradient {
         const [J, C, h] = colour;
         return {
             stopFn: (i) => rgbToClampedHex(calculus.JCh_to_sRGB(J, i * JCH_CHROMA_SCALE, h)),
             position: C / JCH_CHROMA_SCALE
+        }
+    },
+    angleGradient(colour: ModelParams): ColourOnGradient {
+        const [J, C, h] = colour;
+        return {
+            stopFn: (i) => rgbToClampedHex(calculus.JCh_to_sRGB(J, C, i * 3.6)),
+            position: h / 3.6
         }
     },
 }
@@ -512,14 +520,14 @@ export const LABProjectedModel: ColourModel = {
             ...unscaleAB({a: l, b: scale}, scaling)
         }        
     },    
-    aGradient(colour: ModelParams): ColourOnGradiant {
+    aGradient(colour: ModelParams): ColourOnGradient {
         const [l, a, b] = colour;
         return {
             stopFn: (i) => rgbToClampedHex(calculus.lab_to_sRGB(i, a, b)),
             position: l
         }
     },
-    bGradient(colour: ModelParams): ColourOnGradiant {
+    bGradient(colour: ModelParams): ColourOnGradient {
         const [l, a, b] = colour;
         // Get the angle of this colour in A*B* projected space
         const angle = rayUnProject(a, b);
@@ -531,7 +539,7 @@ export const LABProjectedModel: ColourModel = {
             stopFn: (i) => rgbToClampedHex(calculus.lab_to_sRGB(l, x * LAB_SCALE * i, y * LAB_SCALE * i)),
             position: abSize
         }
-    },        
+    },
 }
 
 export const LABModel: ColourModel = {
@@ -561,14 +569,14 @@ export const LABModel: ColourModel = {
             ...unscaleAB({a: l, b: scale}, scaling)
         }        
     },
-    aGradient(colour: ModelParams): ColourOnGradiant {
+    aGradient(colour: ModelParams): ColourOnGradient {
         const [l, a, b] = colour;
         return {
             stopFn: (i) => rgbToClampedHex(calculus.lab_to_sRGB(i, a, b)),
             position: l
         }
     },
-    bGradient(colour: ModelParams): ColourOnGradiant {
+    bGradient(colour: ModelParams): ColourOnGradient {
         const [l, a, b] = colour;
         // Get the angle of this colour in A*B* projected space
         const angle = rayUnProject(a, b);
@@ -604,20 +612,28 @@ export const HCLModel: ColourModel = {
             ...unscaleAB({a: c / HCL_CHROMA_SCALE, b: l}, scaling)
         }
     },
-    aGradient(colour: ModelParams): ColourOnGradiant {
+    aGradient(colour: ModelParams): ColourOnGradient {
         const [h, c, l] = colour;
         return {
             stopFn: (i) => rgbToClampedHex(calculus.hcl_to_sRGB(h, i * HCL_CHROMA_SCALE, l)),
             position: c / HCL_CHROMA_SCALE
         }
     },
-    bGradient(colour: ModelParams): ColourOnGradiant {
+    bGradient(colour: ModelParams): ColourOnGradient {
         const [h, c, l] = colour;
         return {
             stopFn: (i) => rgbToClampedHex(calculus.hcl_to_sRGB(h, c, i)),
             position: l
         }
     },    
+    angleGradient(colour: ModelParams): ColourOnGradient {
+        const [h, c, l] = colour;
+        return {
+            stopFn: (i) => rgbToClampedHex(calculus.hcl_to_sRGB(i * 3.6, c, l)),
+            position: h/3.6
+        }
+    },    
+    
 }
 
 export const ALL_MODELS = [HSLModel, HSVModel, HCVModel, HWBModel, JChModel, LABModel, LABProjectedModel, HCLModel/*, JChAltModel*/];

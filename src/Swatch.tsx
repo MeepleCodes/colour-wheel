@@ -1,5 +1,5 @@
 import { lab_to_sRGB } from "color-calculus";
-import { ColourModel, RadialScaling, rgbToClampedHex } from "./ColourModels";
+import { ColourModel, ColourOnGradient, RadialScaling, rgbToClampedHex } from "./ColourModels";
 import { getNamedColourID, NamedColour } from "./colours/Colours";
 
 import React, { useState } from 'react';
@@ -62,6 +62,7 @@ const SwatchLabel = styled(
   })
 (({ theme, position }) => ({
   position: "absolute",
+  minWidth: "170px",
   background: "rgba(0, 0, 0, 0.74)",  
   borderRadius: theme.spacing(0.5),
   zIndex: theme.zIndex.tooltip,
@@ -130,6 +131,20 @@ const GRAD_STOPS = 11;
 /** Size of each stop, in % points */
 const GRAD_STOP_SIZE = 100/(GRAD_STOPS-1);
 
+type SwatchGradientParams = {
+  gradient: ColourOnGradient,
+  label: string
+};
+
+function SwatchGradient({gradient, label}: SwatchGradientParams) {
+  return (<>
+    <Typography variant="h6">{label}</Typography>
+    <div className="gradient" style={{background: `linear-gradient(90deg, ${Array.from({length: GRAD_STOPS}, (_, i) => gradient.stopFn(i * GRAD_STOP_SIZE)).join(", ")})`}}>
+    <div className="location" style={{left: `${Math.min(100, gradient.position)}%`}} title={gradient.position > 100 ? `${label} off the scale` : ''}>{gradient.position > 100 && '>'}</div>
+    </div>  
+  </>)
+}
+
 export type SwatchProps = {
     colour: NamedColour,
     model: ColourModel,
@@ -165,8 +180,9 @@ export function Swatch(props: SwatchProps) {
     const dotClassName = location.distance < 0 ? "dot inside" : location.distance > 1 ? "dot outside" : "dot";
 
     // Set up some gradients
-    const aGrad = model.aGradient ? model.aGradient(location.inModel) : undefined;
-    const bGrad = model.bGradient ? model.bGradient(location.inModel) : undefined;
+    const aGrad = model.aGradient(location.inModel);
+    const bGrad = model.bGradient(location.inModel);
+    const angleGrad = model.angleGradient ? model.angleGradient(location.inModel) : undefined;
 
     const id = getNamedColourID(colour);
     console.log("Rendering swatch with position", position);
@@ -185,18 +201,10 @@ export function Swatch(props: SwatchProps) {
                     {colour.name}
                 </SwatchSummary>
                 <SwatchDetails>
-                {aGrad && <>
-                    <Typography variant="h6">{model.aLabel}</Typography>
-                    <div className="gradient" style={{background: `linear-gradient(90deg, ${Array.from({length: GRAD_STOPS}, (_, i) => aGrad.stopFn(i * GRAD_STOP_SIZE)).join(", ")})`}}>
-                    <div className="location" style={{left: `${Math.min(100, aGrad.position)}%`}} title={aGrad.position > 100 ? `${model.aLabel} off the scale` : ''}>{aGrad.position > 100 && '>'}</div>
-                    </div>
-                </>}
-                {bGrad && <>
-                  <Typography variant="h6">{model.bLabel}</Typography>
-                    <div className="gradient" style={{background: `linear-gradient(90deg, ${Array.from({length: GRAD_STOPS}, (_, i) => bGrad.stopFn(i * GRAD_STOP_SIZE)).join(", ")})`}}>
-                    <div className="location" style={{left: `${Math.min(100, bGrad.position)}%`}}title={bGrad.position > 100 ? `${model.bLabel} off the scale` : ''}>{bGrad.position > 100 && '>'}</div>
-                    </div>
-                </>}
+                {model.angleGradient && <SwatchGradient gradient={model.angleGradient(location.inModel)!} label="Hue/angle"/>
+                }
+                <SwatchGradient gradient={model.aGradient(location.inModel)} label={model.aLabel}/>
+                <SwatchGradient gradient={model.bGradient(location.inModel)} label={model.bLabel}/>
                 <Typography variant="h6">CIE L*A*B*</Typography>
                 {colour.lab.map(v => Math.round(v * 10)/10).join(", ")}
                 <Typography variant="h6">{model.name}</Typography>

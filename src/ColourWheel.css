@@ -1,6 +1,17 @@
-.wheel-wrapper {
+.wheel {
     position: relative;
+    min-width: 100px;
 }
+    .wheel .square {
+        position: relative;
+        width: 100%;
+        padding-bottom: 100%;
+    }
+        .wheel .square canvas {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
 div.swatch {
     position: absolute;
 }
@@ -17,4 +28,3 @@ div.swatch {
     div.swatch div.dot.outside {
         border-radius: 100% 0 100% 100%;
     }
-    

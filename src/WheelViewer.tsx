@@ -62,7 +62,6 @@ enum Actions {
 }
 function encodeSearchParams(state: ViewerState): string {
     const defaults = getDefaultState(state.model);
-    console.log("Search encoding non-default state from", state, defaults);
     return new URLSearchParams(Object.fromEntries(
         Object.entries(state)
             .filter(([k, v]) => k !== "model" && v !== defaults[k])
@@ -95,7 +94,7 @@ function getStateReducer(nav: NavigateFunction,  params: Readonly<Params<string>
                     nav({pathname: `/colour-wheel/${newModel.code}`, search: encodeSearchParams(newState)}, {replace: false});
                     return newState;
                 } else {
-                    // Do nothing if just the model changes
+                    // Do nothing if the model doesn't change
                     // Maybe this is wrong? TBC...
                     return modState;
                 }
@@ -152,11 +151,10 @@ export function WheelViewer({model}: ViewerProps) {
     const modState = addRouteToState(state, params, searchParams);
 
     return (
-        <Card sx={{display: 'flex', flexDirection: 'row', margin: 2, width: 1200}}>
-        <CardMedia sx={{margin: 2}}>
+        <Card sx={{display: 'flex', flexDirection: 'row', margin: 2, width: "100%"}}>
+        <CardMedia sx={{margin: 2, marginRight: 12, flex: 1}}>
             <ColourWheel 
                 swatches={modState.swatchSet.swatches} 
-                size={750} 
                 model={modState.model} 
                 slices={modState.slices} 
                 rings={modState.rings} 

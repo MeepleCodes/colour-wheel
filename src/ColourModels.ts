@@ -58,6 +58,15 @@ function unscaleAB(ab: {a?: number, b?: number}, scaling: RadialScaling) : {dist
     }
 }
 
+/**
+ * Turn an RGB value (as an array[3] in the range 0-255) to a hex string, eg "#f0f0f0".
+ * 
+ * Values outside the accepted range, eg as a result of out-of-gamut conversions, will
+ * simply be clamped to [0, 255], which can lead to distortion.
+ */
+function rgbToClampedHex(rgb: RGB): string {
+    return "#" + convert.rgb.hex(rgb.map(v => Math.max(0, Math.min(255, v))) as RGB);
+}
 
 /**
  * Produce a ModelResult from an sRGB value expressed as an array
@@ -73,7 +82,7 @@ function rgbToResult(rgb: RGB): ModelResult {
     var inGamut = !rgb.some(v => v < 0 || v > 255);
     return {
         inGamut: inGamut,
-        sRGB: "#" + convert.rgb.hex(rgb.map(v => Math.max(0, Math.min(255, v))) as RGB)
+        sRGB: rgbToClampedHex(rgb)
     };
 }
 
@@ -184,7 +193,10 @@ export type ModelResult = {
 
 /** Generic type for colour model parameters, which are almost always triplets of numbers (usually 0-360 or 0-100) */
 export type ModelParams = [number, number, number];
-
+export type ColourOnGradiant = {
+    stops: string[];
+    position: number;
+}
 export interface ColourModel<ParamType = ModelParams> {
     code: string;
     name: string;
@@ -194,6 +206,8 @@ export interface ColourModel<ParamType = ModelParams> {
     scaleDefaults?: RadialScalingOpt;
     generateRGB: (angle: number, distance: number, scaling: RadialScaling) => ModelResult;
     locateLAB?: (lab: ModelParams, scaling: RadialScaling) => ColourLocation<ParamType>;
+    aGradient?: (colour: ModelParams) => ColourOnGradiant;
+    bGradient?: (colour: ModelParams) => ColourOnGradiant;
 }
 
 export type RadialScaling = {
@@ -263,6 +277,20 @@ export const HSLModel: ColourModel = {
             ...unscaleAB({a: s, b: l}, scaling)
         }        
     },
+    aGradient(colour: ModelParams): ColourOnGradiant {
+        const [h, s, l] = colour;
+        return {
+            stops: Array.from({length: 11}, (x, i) => "#" + convert.hsl.hex([h, i*10, l])),
+            position: s / 100
+        }
+    },
+    bGradient(colour: ModelParams): ColourOnGradiant {
+        const [h, s, l] = colour;
+        return {
+            stops: Array.from({length: 11}, (x, i) => "#" + convert.hsl.hex([h, s, i*10])),
+            position: l / 100
+        }
+    },    
 }
 
 export const HSVModel: ColourModel = {
@@ -288,6 +316,20 @@ export const HSVModel: ColourModel = {
             ...unscaleAB({a: s, b: v}, scaling)
         }
     },
+    aGradient(colour: ModelParams): ColourOnGradiant {
+        const [h, s, v] = colour;
+        return {
+            stops: Array.from({length: 11}, (x, i) => "#" + convert.hsv.hex([h, i*10, v])),
+            position: s / 100
+        }
+    },
+    bGradient(colour: ModelParams): ColourOnGradiant {
+        const [h, s, v] = colour;
+        return {
+            stops: Array.from({length: 11}, (x, i) => "#" + convert.hsv.hex([h, s, i*10])),
+            position: v / 100
+        }
+    },    
 }
 
 export const HCVModel: ColourModel = {
@@ -316,6 +358,20 @@ export const HCVModel: ColourModel = {
             ...unscaleAB({a: c, b: g}, scaling)
         }
     },      
+    aGradient(colour: ModelParams): ColourOnGradiant {
+        const [h, c, g] = colour;
+        return {
+            stops: Array.from({length: 11}, (x, i) => "#" + convert.hsv.hex([h, i*10, g])),
+            position: c / 100
+        }
+    },
+    bGradient(colour: ModelParams): ColourOnGradiant {
+        const [h, c, g] = colour;
+        return {
+            stops: Array.from({length: 11}, (x, i) => "#" + convert.hsv.hex([h, c, i*10])),
+            position: g / 100
+        }
+    },    
 }
 
 
@@ -347,6 +403,20 @@ export const HWBModel: ColourModel = {
             ...unscaleAB({b}, scaling)
         }
     },
+    aGradient(colour: ModelParams): ColourOnGradiant {
+        const [h, w, b] = colour;
+        return {
+            stops: Array.from({length: 11}, (x, i) => "#" + convert.hwb.hex([h, i*10, b])),
+            position: w / 100
+        }
+    },
+    bGradient(colour: ModelParams): ColourOnGradiant {
+        const [h, w, b] = colour;
+        return {
+            stops: Array.from({length: 11}, (x, i) => "#" + convert.hwb.hex([h, w, i*10])),
+            position: b / 100
+        }
+    },
 }
 
 export const JChModel: ColourModel = {
@@ -373,8 +443,29 @@ export const JChModel: ColourModel = {
             inModel: [J, C, h],
             ...unscaleAB({a: J, b: C/1.5}, scaling)
         }        
-    },    
+    },
+    aGradient(colour: ModelParams): ColourOnGradiant {
+        const [J, C, h] = colour;
+        return {
+            stops: Array.from({length: 11}, (x, i) => rgbToClampedHex(calculus.JCh_to_sRGB(i * 10, C, h))),
+            position: J / 100
+        }
+    },
+    bGradient(colour: ModelParams): ColourOnGradiant {
+        const [J, C, h] = colour;
+        return {
+            stops: Array.from({length: 11}, (x, i) => rgbToClampedHex(calculus.JCh_to_sRGB(J, i * 10, h))),
+            position: C / 100
+        }
+    },
 }
+
+/** Scale factor for A* and B* in L*A*B* space
+ * While A* and B* are technically unbounded, +/- 100 is definitely
+ * too small for a maximum value (128 is common when using a single byte,
+ * 150 is possible for some reds).
+*/
+const LAB_SCALE = 1.5;
 
 export const LABProjectedModel: ColourModel = {
     code: "LAB-PROJ",
@@ -383,7 +474,8 @@ export const LABProjectedModel: ColourModel = {
     aLabel: "Lightness",
     bLabel: "A*B* scale",
     scaleDefaults: {
-        bMin: 100
+        aMin: 50,
+        aMax: 50
     },
     generateRGB: (angle: number, distance: number, scaling: RadialScaling) => {
         let {a: l, b: scale} = scaleAB(distance, scaling);
@@ -395,7 +487,7 @@ export const LABProjectedModel: ColourModel = {
     },
     locateLAB(lab, scaling):  ColourLocation {
         var [l, a, b] = lab;
-        var angle = rayUnProject(a, b)
+        var angle = rayUnProject(a, b);
         // Work out where that angle intersects the +/-1 square in colour space
         let {x:unitX, y:unitY} = rayProject(angle);
         // Now work out how out along that ray we are
@@ -407,14 +499,28 @@ export const LABProjectedModel: ColourModel = {
             inModel: lab,
             ...unscaleAB({a: l, b: scale}, scaling)
         }        
+    },    
+    aGradient(colour: ModelParams): ColourOnGradiant {
+        const [l, a, b] = colour;
+        return {
+            stops: Array.from({length: 11}, (x, i) => rgbToClampedHex(calculus.lab_to_sRGB(i * 10, a, b))),
+            position: l / 100
+        }
+    },
+    bGradient(colour: ModelParams): ColourOnGradiant {
+        const [l, a, b] = colour;
+        // Get the angle of this colour in A*B* projected space
+        const angle = rayUnProject(a, b);
+        // Then get a unit x,y vector on that angle
+        const {x, y} = rayProject(angle);
+        // Get our position on that
+        const abSize = (x === 0 ? (y === 0 ? 0 : b/y) : a/x)/LAB_SCALE;
+        return {
+            stops: Array.from({length: 11}, (_, i) => rgbToClampedHex(calculus.lab_to_sRGB(l, x * LAB_SCALE * i * 10, y * LAB_SCALE * i * 10))),
+            position: abSize / 100
+        }
     },        
 }
-/** Scale factor for A* and B* in L*A*B* space
- * While A* and B* are technically unbounded, +/- 100 is definitely
- * too small for a maximum value (128 is common when using a single byte,
- * 150 is possible for some reds).
-*/
-const LAB_SCALE = 1.5;
 
 export const LABModel: ColourModel = {
     code: "LAB",
@@ -443,6 +549,26 @@ export const LABModel: ColourModel = {
             ...unscaleAB({a: l, b: scale}, scaling)
         }        
     },
+    aGradient(colour: ModelParams): ColourOnGradiant {
+        const [l, a, b] = colour;
+        return {
+            stops: Array.from({length: 11}, (x, i) => rgbToClampedHex(calculus.lab_to_sRGB(i * 10, a, b))),
+            position: l / 100
+        }
+    },
+    bGradient(colour: ModelParams): ColourOnGradiant {
+        const [l, a, b] = colour;
+        // Get the angle of this colour in A*B* projected space
+        const angle = rayUnProject(a, b);
+        // Then get a unit x,y vector on that angle
+        const {x, y} = noProjection(angle);
+        // Get our position on that
+        const abSize = (x === 0 ? (y === 0 ? 0 : b/y) : a/x)/LAB_SCALE;
+        return {
+            stops: Array.from({length: 11}, (_, i) => rgbToClampedHex(calculus.lab_to_sRGB(l, x * LAB_SCALE * i * 10, y * LAB_SCALE * i * 10))),
+            position: abSize / 100
+        }
+    },        
 }
 
 export const HCLModel: ColourModel = {
@@ -464,6 +590,20 @@ export const HCLModel: ColourModel = {
             ...unscaleAB({a: c, b: l}, scaling)
         }
     },
+    aGradient(colour: ModelParams): ColourOnGradiant {
+        const [h, c, l] = colour;
+        return {
+            stops: Array.from({length: 11}, (_, i) => rgbToClampedHex(calculus.hcl_to_sRGB(h, i * 10, l))),
+            position: c / 100
+        }
+    },
+    bGradient(colour: ModelParams): ColourOnGradiant {
+        const [h, c, l] = colour;
+        return {
+            stops: Array.from({length: 11}, (_, i) => rgbToClampedHex(calculus.hcl_to_sRGB(h, c, i * 10))),
+            position: c / 100
+        }
+    },    
 }
 
 export const ALL_MODELS = [HSLModel, HSVModel, HCVModel, HWBModel, JChModel, LABModel, LABProjectedModel, HCLModel/*, JChAltModel*/];

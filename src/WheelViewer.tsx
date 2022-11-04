@@ -13,16 +13,16 @@ import Switch from '@mui/material/Switch';
 
 import { ColourWheel } from './ColourWheel';
 import { ALL_MODELS, ColourModel, getModelDefaults, getModelFromCode, HSLModel, RadialScaling } from './ColourModels';
-import { goldenFluidAcrylicSetThick, goldenFluidAcrylicSetThin, goldenHeavyBodyModernMixingSetThick, goldenHeavyBodyModernMixingSetThin } from './paints/GoldenPalettes';
-import { uniqueHues } from './paints/UniqueHues';
-import { SwatchSet } from './paints/Swatch';
+import { goldenFluidAcrylicSetThick, goldenFluidAcrylicSetThin, goldenHeavyBodyModernMixingSetThick, goldenHeavyBodyModernMixingSetThin } from './colours/GoldenPalettes';
+import { uniqueHues } from './colours/UniqueHues';
+import { Palette } from './colours/Colours';
 import { NavigateFunction, Params, useNavigate, useParams } from 'react-router';
 import { useSearchParams } from 'react-router-dom';
 
 
-const noSwatchSet: SwatchSet = {
+const noSwatchSet: Palette = {
     name: "None",
-    swatches: []
+    colours: []
 };
 const ALL_SWATCHESETS = [noSwatchSet, goldenFluidAcrylicSetThick, goldenFluidAcrylicSetThin, goldenHeavyBodyModernMixingSetThick, goldenHeavyBodyModernMixingSetThin, uniqueHues];
 function getSwatchSetByName(name?: string) {
@@ -34,7 +34,7 @@ function getSwatchSetByName(name?: string) {
  */
 type ViewerState = {
     model: ColourModel,
-    swatchSet: SwatchSet,
+    swatchSet: Palette,
     rings: number,
     slices: number,
     fill: boolean,
@@ -65,7 +65,7 @@ function encodeSearchParams(state: ViewerState): string {
     return new URLSearchParams(Object.fromEntries(
         Object.entries(state)
             .filter(([k, v]) => k !== "model" && v !== defaults[k])
-            .map(([k, v]) => [k, k === "swatchSet" ? (v as SwatchSet).name : v.toString()])
+            .map(([k, v]) => [k, k === "swatchSet" ? (v as Palette).name : v.toString()])
         )).toString();
 }
 function getDefaultState(model?: ColourModel): ViewerState {
@@ -134,7 +134,7 @@ function addRouteToState(state: ViewerState, params: Readonly<Params<string>>, s
     }
     // TODO: Extract this to decodeSearchParams, apply min/max/step restrictions to each property
     const intStateParams = ["slices", "rings", "aMin", "aMax", "bMin", "bMax"];
-    const boolStateParams = ["gamutWarnings", "fill"];
+    const boolStateParams = ["gamutWarnings", "fill", "swatchLabels"];
     for(const k of intStateParams) {
         if(searchParams.has(k)) modState[k] = parseInt(searchParams.get(k)!, 10);
     }
@@ -154,7 +154,7 @@ export function WheelViewer({model}: ViewerProps) {
         <Card sx={{display: 'flex', flexDirection: 'row', margin: 2, width: "100%"}}>
         <CardMedia sx={{margin: 2, marginRight: 12, flex: 1}}>
             <ColourWheel 
-                swatches={modState.swatchSet.swatches} 
+                swatches={modState.swatchSet.colours} 
                 model={modState.model} 
                 slices={modState.slices} 
                 rings={modState.rings} 

@@ -1,127 +1,11 @@
-import { lab_to_sRGB } from 'color-calculus';
-import { rgb } from 'color-convert';
-import { RGB } from 'color-convert/conversions';
-import React, { MutableRefObject, RefObject, useEffect, useLayoutEffect, useRef } from 'react';
-import { ColourLocation, ColourModel, getModelDefaults, RadialScaling } from './ColourModels';
-import { getSwatchID, Swatch } from './paints/Swatch';
-
-import { styled } from '@mui/material/styles';
-import Accordion, { AccordionProps } from '@mui/material/Accordion';
-import AccordionSummary,  {AccordionSummaryProps } from '@mui/material/AccordionSummary';
-import AccordionDetails from '@mui/material/AccordionDetails';
-import Grid from '@mui/material/Grid';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import Typography from '@mui/material/Typography';
+import React, { RefObject, useLayoutEffect, useRef } from 'react';
+import { ColourModel, getModelDefaults, RadialScaling } from './ColourModels';
+import { getNamedColourID, NamedColour } from './colours/Colours';
 
 import useResizeObserver from '@react-hook/resize-observer'
 
 import './ColourWheel.css';
-
-/** Number of stops on a model parameter gradient for swatch details */
-const GRAD_STOPS = 11;
-/** Size of each stop, in % points */
-const GRAD_STOP_SIZE = 100/(GRAD_STOPS-1);
-
-type SwatchDetails = {
-  left: string;
-  top: string;
-  colour: string;
-  angle: number;
-  oob: string;
-  aDelta: number;
-  bDelta: number;
-  inModel: [number, number, number]
-} & Swatch;
-
-function getSwatchDetails(swatch: Swatch, location: ColourLocation, swatchSize: number): SwatchDetails {
-  let {angle, distance, aDelta, bDelta, inModel} = location;
-  // The size of the wheel, which will be drawn in the middle of the canvas if it's not square
-  let angleRad = angle * Math.PI * 2;
-  let clampedDistance = Math.max(0, Math.min(1, distance));
-  // Because of the flipped canvas, our angles start from the +ve X axis and wind anticlockwise
-  // Get x/y positions in the range -1 to +1
-  let x = (clampedDistance * Math.cos(angleRad));
-  let y = (clampedDistance * Math.sin(angleRad));
-  let hex = "#" + rgb.hex(lab_to_sRGB(swatch.lab).map(v => Math.max(0, Math.min(255, v))) as RGB);        
-  // Convert x/y between [-1, +1] from centre to [0%, 100%] from top left corner
-  return {
-    ...swatch,
-    left: `calc(${(x * 50) + 50}% - ${swatchSize/2}px)`,
-    top: `calc(${50 - (y * 50)}% - ${swatchSize/2}px)`,
-    colour: hex,
-    // Invert angle into CSS world (where it's clockwise again)
-    angle: -angleRad,
-    inModel: inModel,
-    aDelta,
-    bDelta,
-    oob: distance < 0 ? "inside" : distance > 1 ? "outside" : ""
-  }
-}
-
-const SwatchLabel = styled((props: AccordionProps) => (
-  <Accordion disableGutters {...props} />
-))(({ theme }) => ({
-  position: "absolute",
-  left: "calc(100% + 5px)",
-  color: "#fff",
-  background: "rgba(0, 0, 0, 0.74)",
-  fontSize: "0.8rem",
-  borderRadius: theme.spacing(0.5),
-  zIndex: theme.zIndex.tooltip,
-  '&.Mui-expanded': {
-    zIndex: theme.zIndex.tooltip + 100,
-  },
-  '&:focus-within': {
-    zIndex: theme.zIndex.tooltip + 1,
-  },
-  '&.Mui-expanded:focus-within': {
-    zIndex: theme.zIndex.tooltip + 101,
-  },
-  '&:hover': {
-    zIndex: theme.zIndex.tooltip + 10,
-  },
-  '&.Mui-expanded:hover': {
-    zIndex: theme.zIndex.tooltip + 110,
-  },
-}));
-
-const SwatchSummary = styled((props: AccordionSummaryProps) => (
-  <AccordionSummary
-    expandIcon={<ExpandMoreIcon />}
-    {...props}
-  />
-))(({ theme }) => ({
-  whiteSpace: "nowrap",
-  minHeight: 0,
-  margin: 0,
-  padding: `0 0 0 ${theme.spacing(1)}`,
-  '& .MuiAccordionSummary-content': {
-    margin: 0
-  }
-}));
-
-const SwatchDetails = styled(AccordionDetails)(({ theme }) => ({
-  padding: theme.spacing(1),
-  '& .MuiTypography-caption': {
-    fontSize: "0.6rem"
-  },
-  '& .gradient': {
-    width: "100%",
-    height: 25,
-    position: "relative"
-  },
-  '& .location': {
-    top: "50%",
-    margin: -10,
-    width: 20,
-    height: 20,
-    position: "absolute",
-    border: "1px solid white",
-    outline: "1px solid black",
-    boxSizing: "border-box",
-    borderRadius: "100%",
-  }
-}));
+import { Swatch } from './Swatch';
 
 
 export type ColourWheelProps = {
@@ -136,11 +20,10 @@ export type ColourWheelProps = {
   bMin?: number;
   bMax?: number;
   swatchSize?: number;
-  swatches?: Swatch[];
+  swatches?: NamedColour[];
   swatchLabels?: boolean;
 }
 
-const SWATCHES_CANVAS = false;
 
 function redrawCanvas(canvasRef: RefObject<HTMLCanvasElement>, props: ColourWheelProps) {
   // Blithely assert we'll never fail to get a context
@@ -164,59 +47,74 @@ function redrawCanvas(canvasRef: RefObject<HTMLCanvasElement>, props: ColourWhee
     aMin,
     aMax,
     bMin,
-    bMax,
-    swatches = []
+    bMax
   } = {...modelDefaults, ...props};
   const scaling: RadialScaling = {aMin: aMin, aMax: aMax, bMin: bMin, bMax: bMax};
   const [width, height] = [canvasRef.current.clientWidth, canvasRef.current.clientHeight];
   
+  // Scale the wheel to the smaller dimension
   const size = Math.min(width, height);
-  console.log("Redrawing canvas to scale ", size, "from canvas with width", width,"height", height);
-  // Resize the canvas buffer to be the same size as it's client width/height
+  // Resize the canvas buffer to be the same size as it's client width/height,
+  // then clear it
   ctx.canvas.width = width; ctx.canvas.height=height;
   ctx.resetTransform();
   ctx.clearRect(0, 0, width, height);
+  // The maths is much easier if the canvas looks like the x/y space usually used
+  // in most maths examples, ie 0,0 is in the centre, +x is right, +y is up.
+  // So, offset x/y by half:
   ctx.translate(width/2, height/2);
   // Flip the canvas to make +ve y towards the top of the screen. This also has the
   // side-effect of making all angles counterclockwise from horizontal. Fortunately
   // that gives us hue circles in the order we generally expect, so we don't bother
-  // compensating for it
+  // compensating for it (except when we need to go back to angles that are clockwise
+  // in a few places)
   ctx.scale(1, -1);
+
+  // Angle swept by a single pie slice
   const sliceAngle = Math.PI * 2 / slices;
-  // Avoid clipping the outside ring by insetting 1px
-  const radius = size/2 - 1;
-  const ringRadius = radius/rings;
-
+  // Radius delta of a single ring. Subtract 1 pixel so if we draw strokes on the section
+  // (ie no-fill mode) the outermost ring doesn't clip
+  const ringRadius = (size/2 - 1) / rings;
   
-  const radiusOverlap = 0.5;
+  // Expand sections by this small amount from the 'ideal' calculation to avoid
+  // tiny gaps between them
+  const overlap = 0.5;
 
-  for(var slice = 0; slice < slices; slice++) {
+  for(let slice = 0; slice < slices; slice++) {
     // Whether we were previously in-gamut in this slice, or null if unknown (ie first ring)
-    var sliceInGamut: boolean | null = null;
+    let sliceInGamut: boolean | null = null;
     for(var ring=0; ring < rings; ring++) {
-      
-      
-      var startRadius = Math.max(0, ring * ringRadius - radiusOverlap);
-      var endRadius = (ring + 1) * ringRadius;
-      var angleOverlap = Math.asin(0.5/endRadius);
-      var startAngle = ((slice - 0.5) * sliceAngle) - angleOverlap;
-      var endAngle = ((slice + 0.5) * sliceAngle) + angleOverlap;
+      // Overlap would otherwise have us draw the first ring starting at -0.5, so clamp to 0
+      const innerRadius = Math.max(0, ring * ringRadius - overlap);
+      const outerRadius = (ring + 1) * ringRadius;
+      // 'Ideal' angles for this section, we'll add some overlap later
+      const startAngle = ((slice - 0.5) * sliceAngle);
+      const endAngle = ((slice + 0.5) * sliceAngle);      
+
+      // Work out how much angle the overlap spans at each edge of the section
+      const innerOverlapAngle = innerRadius === 0 ? 0 : Math.asin(overlap/innerRadius);
+      const outerOverlapAngle = Math.asin(overlap/outerRadius);
       
       // Angle goes [0, 1) but distance goes (0, 1] because we always want to at least draw the maximum chroma/brightness/value at the outside
-      var result = model.generateRGB(slice/slices, (ring + 1)/rings, scaling);
+      const result = model.generateRGB(slice/slices, (ring + 1)/rings, scaling);
       ctx.fillStyle = result.sRGB;
       
       ctx.beginPath();
-      ctx.arc(0, 0, startRadius, startAngle, endAngle);
-      // Draw a gamut border if the in-gamut has changed (and wasn't previously null for 'unknown')
+      // Inside border, runs 'clockwise' (in pre-transform canvas space; ccw on screen)
+      ctx.arc(0, 0, innerRadius, startAngle - innerOverlapAngle, endAngle + innerOverlapAngle);
+      // Draw a border on the inside of this section if gamut has changed from the previous
+      // section along the radial (and we want to draw them). Do this now so we can
+      // piggy-back off the arc() call that describes the inside edge of the section
       if(fill && gamutWarnings && result.inGamut !== sliceInGamut) {
         ctx.strokeStyle = "rgba(0, 0, 0, 0.4)";
         ctx.stroke();
       }
-      ctx.arc(0, 0, endRadius, endAngle, startAngle, true);
+      // Outside border, running 'anticlockwise', defines the rest of the section
+      ctx.arc(0, 0, outerRadius, endAngle + outerOverlapAngle, startAngle - innerOverlapAngle, true);
       ctx.closePath();
       if(fill) ctx.fill();
       else ctx.stroke();
+      // If the section is out of gamut, draw a marker in the middle
       if(fill && gamutWarnings && !result.inGamut) {
         let x = Math.cos(slice * sliceAngle) * (ring + 0.5) * ringRadius;
         let y = Math.sin(slice * sliceAngle) * (ring + 0.5) * ringRadius;
@@ -225,52 +123,20 @@ function redrawCanvas(canvasRef: RefObject<HTMLCanvasElement>, props: ColourWhee
         ctx.strokeStyle = "rgba(0, 0, 0, 0.2)";
         ctx.stroke();
       }
+      // Store in-gamut flag to be used by the rest of the sections on this radial
       sliceInGamut = result.inGamut;
     }
   }
-  const paintRadius = 10;
-  if(model.locateLAB && SWATCHES_CANVAS) {
-    for(var s of swatches) {
-      let {angle, distance} = model.locateLAB(s.lab, scaling);
-      let angleRad = angle * Math.PI * 2;
-      let clampedDistance = Math.max(0, Math.min(1, distance));
-      // Angle starts at 0 = +ve X axis
-      let x = clampedDistance * radius * Math.cos(angleRad);
-      let y = clampedDistance * radius * Math.sin(angleRad);
-      let hex = "#" + rgb.hex(lab_to_sRGB(s.lab).map(v => Math.max(0, Math.min(255, v))) as RGB);
-      ctx.fillStyle = hex;
-      ctx.beginPath();
-      if(distance < 0) {
-        ctx.arc(x, y, paintRadius,  angleRad + (5/4 * Math.PI), angleRad + (3/4 * Math.PI));
-        ctx.lineTo(x - paintRadius * Math.cos(angleRad) * Math.SQRT2, y - paintRadius * Math.sin(angleRad) * Math.SQRT2);
-        ctx.closePath();
-      } else if (distance > 1) {
-        ctx.arc(x, y, paintRadius,  angleRad + (1/4 * Math.PI), angleRad + (7/4 * Math.PI));
-        ctx.lineTo(x + paintRadius * Math.cos(angleRad) * Math.SQRT2, y + paintRadius * Math.sin(angleRad) * Math.SQRT2);
-        ctx.closePath();
-      } else {
-        ctx.arc(x, y, paintRadius,  0, Math.PI * 2);
-      }
-      // ctx.moveTo(x - paintRadius, y);
-      // ctx.lineTo(x, y + paintRadius);
-      // ctx.lineTo(x+paintRadius, y);
-      // ctx.lineTo(x, y-paintRadius);
-      // ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-    }
-  }
-
 }
 
 export function ColourWheel (props: ColourWheelProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  useResizeObserver(canvasRef, (entry) => {
-    console.log("Resize observer: redrawing");
+  // We redraw the canvas when either the element is resized (eg window resize, reflow, whatever)
+  // or after everything else has been layed out (initial render, also whenever props change)
+  useResizeObserver(canvasRef, (_) => {
     redrawCanvas(canvasRef, props);
   });
   useLayoutEffect(() => {
-    console.log("layoutEffect: redrawing");
     redrawCanvas(canvasRef, props);
   }, [canvasRef, props]);
 
@@ -286,79 +152,12 @@ export function ColourWheel (props: ColourWheelProps) {
     bMax
   } = {...getModelDefaults(props.model), ...props};
   const scaling: RadialScaling = {aMin: aMin, aMax: aMax, bMin: bMin, bMax: bMax};
-  var details: SwatchDetails[] = [];
-  if(model.locateLAB && !SWATCHES_CANVAS) {
-    // Need a const to capture to stop typescript worrying about the lambda in map()
-    const lab = model.locateLAB;
-    details = swatches.map(swatch => getSwatchDetails(swatch, lab(swatch.lab, scaling), swatchSize));
-  }
   return(
     <div className="wheel">
       <div className="square">
       <>
       <canvas ref={canvasRef}/>
-      {
-        // We could use styled-components to remove the explicit width/height everywhere, but this works for now
-        // Angle is offset by 45 degrees as the border-radiuses mean our "horizontal" starts out going bottom-left to top-right
-        details.map(swatch => {
-          const aGrad = model.aGradient ? model.aGradient(swatch.inModel) : undefined;
-          const bGrad = model.bGradient ? model.bGradient(swatch.inModel) : undefined;
-          return <div
-            key={getSwatchID(swatch)}
-            className="swatch"
-            style={{left: swatch.left, top: swatch.top, width: swatchSize, height: swatchSize}}>
-              <div className={"dot " + swatch.oob}
-                style={{transform: `rotate(${swatch.angle + Math.PI/4}rad)`, backgroundColor: swatch.colour}}/>
-            <SwatchLabel>
-              <SwatchSummary
-                aria-controls={`${getSwatchID(swatch)}-content`}
-                id={`${getSwatchID(swatch)}-header`}
-              >
-                {swatch.name}
-              </SwatchSummary>
-              <SwatchDetails sx={{minWidth: 160}}>
-              {aGrad && <>
-                  {model.aLabel}
-                  <div className="gradient" style={{background: `linear-gradient(90deg, ${Array.from({length: GRAD_STOPS}, (_, i) => aGrad.stopFn(i * GRAD_STOP_SIZE)).join(", ")})`}}>
-                    <div className="location" style={{left: `${aGrad.position}%`}}/>
-                  </div>
-                </>}
-                {bGrad && <>
-                  {model.bLabel}
-                  <div className="gradient" style={{background: `linear-gradient(90deg, ${Array.from({length: GRAD_STOPS}, (_, i) => bGrad.stopFn(i * GRAD_STOP_SIZE)).join(", ")})`}}>
-                    <div className="location" style={{left: `${bGrad.position}%`}}/>
-                  </div>
-                </>}
-                <p>
-                <Typography variant="caption">CIE L*A*B*</Typography>
-                {swatch.lab.map(v => Math.round(v * 10)/10).join(", ")}
-                </p>
-                <p>
-                <Typography variant="caption">{model.code}</Typography>
-                {swatch.inModel.map(v => Math.round(v * 10)/10).join(", ")}
-                </p>
-              </SwatchDetails>
-            </SwatchLabel>
-          </div>;
-          
-          // if(swatchLabels) {
-          //   return (
-          //     <Tooltip open={true} 
-          //       key={swatch.name}
-          //       arrow
-          //       placement="right"
-          //       // title={`${swatch.name}: angle=${swatch.angle * 360 / (Math.PI * 2)}, HWB=${swatch.inModel}`}
-          //       // title={`${swatch.name} a:${swatch.aDelta} b: ${swatch.bDelta} (${swatch.inModel})`}
-          //       title={swatch.name}
-          //       >
-          //         {dot}
-          //     </Tooltip>
-          //   );
-          // } else {
-          //   return dot;
-          // }
-        })
-      }
+      {swatches.map(colour => <Swatch key={getNamedColourID(colour)} colour={colour} model={model} scaling={scaling} showLabel={swatchLabels} size={swatchSize}/>)}
       </>
       </div>
     </div>

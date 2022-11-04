@@ -64,7 +64,7 @@ function unscaleAB(ab: {a?: number, b?: number}, scaling: RadialScaling) : {dist
  * Values outside the accepted range, eg as a result of out-of-gamut conversions, will
  * simply be clamped to [0, 255], which can lead to distortion.
  */
-function rgbToClampedHex(rgb: RGB): string {
+export function rgbToClampedHex(rgb: RGB): string {
     return "#" + convert.rgb.hex(rgb.map(v => Math.max(0, Math.min(255, v))) as RGB);
 }
 
@@ -204,9 +204,9 @@ export type ModelParams = [number, number, number];
  * of one parameter of a model.
  */
 export type ColourOnGradiant = {
-    /** Function for generating gradient stops. t will be in range [0, 1] */
+    /** Function for generating gradient stops. t will be a percent in range [0, 100] */
     stopFn: (t: number) => string;
-    /** How far along the gradient the given colour lies, in range [0, 1] */
+    /** How far along the gradient the given colour lies, as a percent in range [0, 100] */
     position: number;
 }
 export interface ColourModel<ParamType = ModelParams> {
@@ -217,9 +217,9 @@ export interface ColourModel<ParamType = ModelParams> {
     bLabel: string | null;
     scaleDefaults?: RadialScalingOpt;
     generateRGB: (angle: number, distance: number, scaling: RadialScaling) => ModelResult;
-    locateLAB?: (lab: ModelParams, scaling: RadialScaling) => ColourLocation<ParamType>;
-    aGradient?: (colour: ModelParams) => ColourOnGradiant;
-    bGradient?: (colour: ModelParams) => ColourOnGradiant;
+    locateLAB: (lab: ModelParams, scaling: RadialScaling) => ColourLocation<ParamType>;
+    aGradient: (colour: ModelParams) => ColourOnGradiant;
+    bGradient: (colour: ModelParams) => ColourOnGradiant;
 }
 
 export type RadialScaling = {
@@ -431,6 +431,7 @@ export const HWBModel: ColourModel = {
     },
 }
 
+const JCH_CHROMA_SCALE = 1.5;
 export const JChModel: ColourModel = {
     code: "JCh",
     name: "CIECAM02 JCh",
@@ -445,15 +446,14 @@ export const JChModel: ColourModel = {
     generateRGB: (angle: number, distance: number, scaling: RadialScaling) => {
         var h = angle * 360;
         var {a: J, b: C} = scaleAB(distance, scaling);
-        C *= 1.5;
-        return rgbToResult(calculus.JCh_to_sRGB(J, C, h));
+        return rgbToResult(calculus.JCh_to_sRGB(J, C * JCH_CHROMA_SCALE, h));
     },
     locateLAB(lab, scaling):  ColourLocation {
         var [J, C, h] = calculus.lab_to_JCh(lab);
         return {
             angle: h / 360,
             inModel: [J, C, h],
-            ...unscaleAB({a: J, b: C/1.5}, scaling)
+            ...unscaleAB({a: J, b: C/JCH_CHROMA_SCALE}, scaling)
         }        
     },
     aGradient(colour: ModelParams): ColourOnGradiant {
@@ -466,8 +466,8 @@ export const JChModel: ColourModel = {
     bGradient(colour: ModelParams): ColourOnGradiant {
         const [J, C, h] = colour;
         return {
-            stopFn: (i) => rgbToClampedHex(calculus.JCh_to_sRGB(J, i, h)),
-            position: C
+            stopFn: (i) => rgbToClampedHex(calculus.JCh_to_sRGB(J, i * JCH_CHROMA_SCALE, h)),
+            position: C / JCH_CHROMA_SCALE
         }
     },
 }
@@ -583,6 +583,8 @@ export const LABModel: ColourModel = {
     },        
 }
 
+/** Scale factor for Chroma, which can exceed 100 (150 seems a reasonable upper bound) */
+const HCL_CHROMA_SCALE=1.5;
 export const HCLModel: ColourModel = {
     code: "HCL",
     name: "CIELAB in polar coordinates",
@@ -592,28 +594,28 @@ export const HCLModel: ColourModel = {
     generateRGB: (angle: number, distance: number, scaling: RadialScaling) => {
         let h = angle * 360;
         let {a: c, b: l} = scaleAB(distance, scaling);
-        return rgbToResult(calculus.hcl_to_sRGB(h, c, l));
+        return rgbToResult(calculus.hcl_to_sRGB(h, c * HCL_CHROMA_SCALE, l));
     },
     locateLAB(lab: ModelParams, scaling: RadialScaling): ColourLocation {
         var [h, c, l] = calculus.lab_to_hcl(lab);
         return {
             angle: h / 360,
             inModel: [h, c, l],
-            ...unscaleAB({a: c, b: l}, scaling)
+            ...unscaleAB({a: c / HCL_CHROMA_SCALE, b: l}, scaling)
         }
     },
     aGradient(colour: ModelParams): ColourOnGradiant {
         const [h, c, l] = colour;
         return {
-            stopFn: (i) => rgbToClampedHex(calculus.hcl_to_sRGB(h, i, l)),
-            position: c
+            stopFn: (i) => rgbToClampedHex(calculus.hcl_to_sRGB(h, i * HCL_CHROMA_SCALE, l)),
+            position: c / HCL_CHROMA_SCALE
         }
     },
     bGradient(colour: ModelParams): ColourOnGradiant {
         const [h, c, l] = colour;
         return {
             stopFn: (i) => rgbToClampedHex(calculus.hcl_to_sRGB(h, c, i)),
-            position: c
+            position: l
         }
     },    
 }

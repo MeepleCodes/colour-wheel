@@ -186,6 +186,12 @@ function noProjection(angle: number): {x: number, y: number} {
 }
 
 
+/**
+ * The result of a model mapping a wheel position to a screen colour
+ * 
+ * If the resulting colour can't be represented in sRGB then sRGB will
+ * clamped to something renderable and inGamut will be false.
+ */
 export type ModelResult = {
     inGamut: boolean;
     sRGB: string;
@@ -193,8 +199,14 @@ export type ModelResult = {
 
 /** Generic type for colour model parameters, which are almost always triplets of numbers (usually 0-360 or 0-100) */
 export type ModelParams = [number, number, number];
+/**
+ * Representation of where a spot colour lies in the range
+ * of one parameter of a model.
+ */
 export type ColourOnGradiant = {
-    stops: string[];
+    /** Function for generating gradient stops. t will be in range [0, 1] */
+    stopFn: (t: number) => string;
+    /** How far along the gradient the given colour lies, in range [0, 1] */
     position: number;
 }
 export interface ColourModel<ParamType = ModelParams> {
@@ -280,15 +292,15 @@ export const HSLModel: ColourModel = {
     aGradient(colour: ModelParams): ColourOnGradiant {
         const [h, s, l] = colour;
         return {
-            stops: Array.from({length: 11}, (x, i) => "#" + convert.hsl.hex([h, i*10, l])),
-            position: s / 100
+            stopFn: (i) => "#" + convert.hsl.hex([h, i, l]),
+            position: s
         }
     },
     bGradient(colour: ModelParams): ColourOnGradiant {
         const [h, s, l] = colour;
         return {
-            stops: Array.from({length: 11}, (x, i) => "#" + convert.hsl.hex([h, s, i*10])),
-            position: l / 100
+            stopFn: (i) => "#" + convert.hsl.hex([h, s, i]),
+            position: l
         }
     },    
 }
@@ -319,15 +331,15 @@ export const HSVModel: ColourModel = {
     aGradient(colour: ModelParams): ColourOnGradiant {
         const [h, s, v] = colour;
         return {
-            stops: Array.from({length: 11}, (x, i) => "#" + convert.hsv.hex([h, i*10, v])),
-            position: s / 100
+            stopFn: (i) => "#" + convert.hsv.hex([h, i, v]),
+            position: s
         }
     },
     bGradient(colour: ModelParams): ColourOnGradiant {
         const [h, s, v] = colour;
         return {
-            stops: Array.from({length: 11}, (x, i) => "#" + convert.hsv.hex([h, s, i*10])),
-            position: v / 100
+            stopFn: (i) => "#" + convert.hsv.hex([h, s, i]),
+            position: v
         }
     },    
 }
@@ -361,15 +373,15 @@ export const HCVModel: ColourModel = {
     aGradient(colour: ModelParams): ColourOnGradiant {
         const [h, c, g] = colour;
         return {
-            stops: Array.from({length: 11}, (x, i) => "#" + convert.hsv.hex([h, i*10, g])),
-            position: c / 100
+            stopFn: (i) => "#" + convert.hsv.hex([h, i, g]),
+            position: c
         }
     },
     bGradient(colour: ModelParams): ColourOnGradiant {
         const [h, c, g] = colour;
         return {
-            stops: Array.from({length: 11}, (x, i) => "#" + convert.hsv.hex([h, c, i*10])),
-            position: g / 100
+            stopFn: (i) => "#" + convert.hsv.hex([h, c, i]),
+            position: g
         }
     },    
 }
@@ -406,15 +418,15 @@ export const HWBModel: ColourModel = {
     aGradient(colour: ModelParams): ColourOnGradiant {
         const [h, w, b] = colour;
         return {
-            stops: Array.from({length: 11}, (x, i) => "#" + convert.hwb.hex([h, i*10, b])),
-            position: w / 100
+            stopFn: (i) => "#" + convert.hwb.hex([h, i, b]),
+            position: w
         }
     },
     bGradient(colour: ModelParams): ColourOnGradiant {
         const [h, w, b] = colour;
         return {
-            stops: Array.from({length: 11}, (x, i) => "#" + convert.hwb.hex([h, w, i*10])),
-            position: b / 100
+            stopFn: (i) => "#" + convert.hwb.hex([h, w, i]),
+            position: b
         }
     },
 }
@@ -447,15 +459,15 @@ export const JChModel: ColourModel = {
     aGradient(colour: ModelParams): ColourOnGradiant {
         const [J, C, h] = colour;
         return {
-            stops: Array.from({length: 11}, (x, i) => rgbToClampedHex(calculus.JCh_to_sRGB(i * 10, C, h))),
-            position: J / 100
+            stopFn: (i) => rgbToClampedHex(calculus.JCh_to_sRGB(i, C, h)),
+            position: J
         }
     },
     bGradient(colour: ModelParams): ColourOnGradiant {
         const [J, C, h] = colour;
         return {
-            stops: Array.from({length: 11}, (x, i) => rgbToClampedHex(calculus.JCh_to_sRGB(J, i * 10, h))),
-            position: C / 100
+            stopFn: (i) => rgbToClampedHex(calculus.JCh_to_sRGB(J, i, h)),
+            position: C
         }
     },
 }
@@ -503,8 +515,8 @@ export const LABProjectedModel: ColourModel = {
     aGradient(colour: ModelParams): ColourOnGradiant {
         const [l, a, b] = colour;
         return {
-            stops: Array.from({length: 11}, (x, i) => rgbToClampedHex(calculus.lab_to_sRGB(i * 10, a, b))),
-            position: l / 100
+            stopFn: (i) => rgbToClampedHex(calculus.lab_to_sRGB(i, a, b)),
+            position: l
         }
     },
     bGradient(colour: ModelParams): ColourOnGradiant {
@@ -516,8 +528,8 @@ export const LABProjectedModel: ColourModel = {
         // Get our position on that
         const abSize = (x === 0 ? (y === 0 ? 0 : b/y) : a/x)/LAB_SCALE;
         return {
-            stops: Array.from({length: 11}, (_, i) => rgbToClampedHex(calculus.lab_to_sRGB(l, x * LAB_SCALE * i * 10, y * LAB_SCALE * i * 10))),
-            position: abSize / 100
+            stopFn: (i) => rgbToClampedHex(calculus.lab_to_sRGB(l, x * LAB_SCALE * i, y * LAB_SCALE * i)),
+            position: abSize
         }
     },        
 }
@@ -552,8 +564,8 @@ export const LABModel: ColourModel = {
     aGradient(colour: ModelParams): ColourOnGradiant {
         const [l, a, b] = colour;
         return {
-            stops: Array.from({length: 11}, (x, i) => rgbToClampedHex(calculus.lab_to_sRGB(i * 10, a, b))),
-            position: l / 100
+            stopFn: (i) => rgbToClampedHex(calculus.lab_to_sRGB(i, a, b)),
+            position: l
         }
     },
     bGradient(colour: ModelParams): ColourOnGradiant {
@@ -565,8 +577,8 @@ export const LABModel: ColourModel = {
         // Get our position on that
         const abSize = (x === 0 ? (y === 0 ? 0 : b/y) : a/x)/LAB_SCALE;
         return {
-            stops: Array.from({length: 11}, (_, i) => rgbToClampedHex(calculus.lab_to_sRGB(l, x * LAB_SCALE * i * 10, y * LAB_SCALE * i * 10))),
-            position: abSize / 100
+            stopFn: (i) => rgbToClampedHex(calculus.lab_to_sRGB(l, x * LAB_SCALE * i, y * LAB_SCALE * i)),
+            position: abSize
         }
     },        
 }
@@ -593,15 +605,15 @@ export const HCLModel: ColourModel = {
     aGradient(colour: ModelParams): ColourOnGradiant {
         const [h, c, l] = colour;
         return {
-            stops: Array.from({length: 11}, (_, i) => rgbToClampedHex(calculus.hcl_to_sRGB(h, i * 10, l))),
-            position: c / 100
+            stopFn: (i) => rgbToClampedHex(calculus.hcl_to_sRGB(h, i, l)),
+            position: c
         }
     },
     bGradient(colour: ModelParams): ColourOnGradiant {
         const [h, c, l] = colour;
         return {
-            stops: Array.from({length: 11}, (_, i) => rgbToClampedHex(calculus.hcl_to_sRGB(h, c, i * 10))),
-            position: c / 100
+            stopFn: (i) => rgbToClampedHex(calculus.hcl_to_sRGB(h, c, i)),
+            position: c
         }
     },    
 }

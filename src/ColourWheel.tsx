@@ -17,6 +17,11 @@ import useResizeObserver from '@react-hook/resize-observer'
 
 import './ColourWheel.css';
 
+/** Number of stops on a model parameter gradient for swatch details */
+const GRAD_STOPS = 11;
+/** Size of each stop, in % points */
+const GRAD_STOP_SIZE = 100/(GRAD_STOPS-1);
+
 type SwatchDetails = {
   left: string;
   top: string;
@@ -53,18 +58,6 @@ function getSwatchDetails(swatch: Swatch, location: ColourLocation, swatchSize: 
   }
 }
 
-// div.swatch .tooltip {
-//   position: absolute;
-//   top: 0;
-//   left: 25px;
-//   opacity: 0.9;
-//   background: rgba(97, 97, 97, 0.92);
-//   color: white;
-//   border-radius: 4px;
-// }
-// div.swatch .tooltip.Mui-expanded {
-//   z-index: 10;
-// }
 const SwatchLabel = styled((props: AccordionProps) => (
   <Accordion disableGutters {...props} />
 ))(({ theme }) => ({
@@ -77,6 +70,18 @@ const SwatchLabel = styled((props: AccordionProps) => (
   zIndex: theme.zIndex.tooltip,
   '&.Mui-expanded': {
     zIndex: theme.zIndex.tooltip + 100,
+  },
+  '&:focus-within': {
+    zIndex: theme.zIndex.tooltip + 1,
+  },
+  '&.Mui-expanded:focus-within': {
+    zIndex: theme.zIndex.tooltip + 101,
+  },
+  '&:hover': {
+    zIndex: theme.zIndex.tooltip + 10,
+  },
+  '&.Mui-expanded:hover': {
+    zIndex: theme.zIndex.tooltip + 110,
   },
 }));
 
@@ -116,7 +121,6 @@ const SwatchDetails = styled(AccordionDetails)(({ theme }) => ({
     boxSizing: "border-box",
     borderRadius: "100%",
   }
-  // borderTop: '1px solid rgba(0, 0, 0, .125)',
 }));
 
 
@@ -136,7 +140,6 @@ export type ColourWheelProps = {
   swatchLabels?: boolean;
 }
 
-const DEFAULT_SIZE = 300;
 const SWATCHES_CANVAS = false;
 
 function redrawCanvas(canvasRef: RefObject<HTMLCanvasElement>, props: ColourWheelProps) {
@@ -316,14 +319,14 @@ export function ColourWheel (props: ColourWheelProps) {
               <SwatchDetails sx={{minWidth: 160}}>
               {aGrad && <>
                   {model.aLabel}
-                  <div className="gradient" style={{background: `linear-gradient(90deg, ${aGrad.stops.join(", ")})`}}>
-                    <div className="location" style={{left: `${aGrad.position * 100}%`}}/>
+                  <div className="gradient" style={{background: `linear-gradient(90deg, ${Array.from({length: GRAD_STOPS}, (_, i) => aGrad.stopFn(i * GRAD_STOP_SIZE)).join(", ")})`}}>
+                    <div className="location" style={{left: `${aGrad.position}%`}}/>
                   </div>
                 </>}
                 {bGrad && <>
                   {model.bLabel}
-                  <div className="gradient" style={{background: `linear-gradient(90deg, ${bGrad.stops.join(", ")})`}}>
-                    <div className="location" style={{left: `${bGrad.position * 100}%`}}/>
+                  <div className="gradient" style={{background: `linear-gradient(90deg, ${Array.from({length: GRAD_STOPS}, (_, i) => bGrad.stopFn(i * GRAD_STOP_SIZE)).join(", ")})`}}>
+                    <div className="location" style={{left: `${bGrad.position}%`}}/>
                   </div>
                 </>}
                 <p>

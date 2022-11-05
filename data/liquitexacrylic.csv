@@ -1,4 +1,4 @@
-#,Color name,series #,hue,Value,Chroma,lightfastness ìIî,opacity,pigment*,pigment name
+Ôªø#,Color name,series #,hue,Value,Chroma,lightfastness ‚ÄúI‚Äù,opacity,pigment*,pigment name
 116,Alizarin crimson hue permanent,2,3.30r,2.86,3.94,i,tp,m,"quinacridone (pr 206), quinacridone (pr 202)"
 660,bright Aqua green,1,4.88bg,6.03,9.04,i,o,m,"chlorinated copper phthalocyanine (pg 7), copper phthalocyanine (pb 15), titanium dioxide (pw6)"
 570,brilliant blue,1A,7.91b,5.08,9.61,i,o,m,"copper phthalocyanine (pb 15:3), chlorinated copper phthalocyanine (pg 7), titanium dioxide (pw6)"
@@ -33,18 +33,18 @@
 450,emerald green,2,3.79g,4.24,7.98,i,o,m,"chlorinated copper phthalocyanine (pg 7), Arylide yellow fgl (py 97), titanium dioxide (pw6)"
 350,green deep permanent,2,6.81g,3.07,3.4,i,o,m,"phthalocyanine green (pg 7), titanium dioxide (pw6), Arylide yellow fgl (py 97)"
 325,green gold,4,7.93 y,3.87,3.26,nr,tl,s,Azo methine copper complex (py 129)
-225,hookerís green,1A,7.73bg,2.47,0.38,i,tl,m,"carbon black (pbk 7), phthalocyanine green (pg 7), deep hue permanent Arylide yellow 5gx (py 74)"
-224,hookerís green hue permanent,1A,7.40 gy,2.95,2.27,i,tl,m,"chlorinated copper phthalocyanine (pg 7), tetrachloroisoindolanone (py 110)"
+225,hooker‚Äôs green,1A,7.73bg,2.47,0.38,i,tl,m,"carbon black (pbk 7), phthalocyanine green (pg 7), deep hue permanent Arylide yellow 5gx (py 74)"
+224,hooker‚Äôs green hue permanent,1A,7.40 gy,2.95,2.27,i,tl,m,"chlorinated copper phthalocyanine (pg 7), tetrachloroisoindolanone (py 110)"
 322,indanthrene blue,3,6.44 p,2.37,1.55,i,tp,s,Anthraquinone blue (pb 60)
 324,indian yellow,2,8.24 yr,6.34,11.21,i,tl,s,isoindolanone (py 139)
-237,iridescent Antique gold,2A,ó,ó,ó,nr,o,m,mica coated with titanium dioxide and iron oxide
-234,iridescent bright gold,2A,ó,ó,ó,nr,tl,m,mica coated with titanium dioxide and iron oxide
-236,iridescent bright silver,2A,ó,ó,ó,nr,tl,m,"mica coated with titanium dioxide and iron oxide, stainless steel"
-229,iridescent rich bronze,2A,ó,ó,ó,nr,o,m,mica coated with titanium dioxide and iron oxide
-230,iridescent rich copper,2A,ó,ó,ó,nr,o,m,mica coated with titanium dioxide and iron oxide
-235,iridescent rich gold,2A,ó,ó,ó,nr,o,m,mica coated with titanium dioxide and iron oxide
-239,iridescent rich silver,2A,ó,ó,ó,nr,o,m,"bismuth oxychloride (pw14), synthetic iron oxide black (pbk 11)"
-238,iridescent white,2A,ó,ó,ó,nr,tp,s,mica coated with titanium dioxide
+237,iridescent Antique gold,2A,‚Äî,‚Äî,‚Äî,nr,o,m,mica coated with titanium dioxide and iron oxide
+234,iridescent bright gold,2A,‚Äî,‚Äî,‚Äî,nr,tl,m,mica coated with titanium dioxide and iron oxide
+236,iridescent bright silver,2A,‚Äî,‚Äî,‚Äî,nr,tl,m,"mica coated with titanium dioxide and iron oxide, stainless steel"
+229,iridescent rich bronze,2A,‚Äî,‚Äî,‚Äî,nr,o,m,mica coated with titanium dioxide and iron oxide
+230,iridescent rich copper,2A,‚Äî,‚Äî,‚Äî,nr,o,m,mica coated with titanium dioxide and iron oxide
+235,iridescent rich gold,2A,‚Äî,‚Äî,‚Äî,nr,o,m,mica coated with titanium dioxide and iron oxide
+239,iridescent rich silver,2A,‚Äî,‚Äî,‚Äî,nr,o,m,"bismuth oxychloride (pw14), synthetic iron oxide black (pbk 11)"
+238,iridescent white,2A,‚Äî,‚Äî,‚Äî,nr,tp,s,mica coated with titanium dioxide
 244,ivory black,1,1.58pb,2.28,0.09,i,o,s,bone black (pbk 9)
 770,light blue permanent,1,4.84b,6.99,7.78,i,o,m,"copper phthalocyanine (pb 15), chlorinated copper phthalocyanine (pg 7), titanium dioxide (pw6)"
 680,light blue violet,1A,6.54pb,6.03,10.68,i,o,m,"complex silicate of sodium and Aluminum with sulfur (pb 29), titanium dioxide (pw6)"
@@ -59,7 +59,7 @@
 601,naples yellow hue,2,9.90 yr,7.58,8.16,nr,o,m,"chrome titanium yellow (pbr 24), titanium white (pw6)"
 599,neutral gray value 5,1,9.97bg,5.03,0.15,i,o,m,"bone black (pbk 9), raw umber (pbr 7), titanium/mixing gray dioxide (pw6)"
 436,parchment,1,7.22y,8.32,1.68,i,o,m,"carbon black (pbk 7), phthalocyanine green (pg 7), titanium dioxide (pw6), iron oxide yellow (py 42)"
-310,payneís gray,1,3.62pb,2.36,0.31,i,o,m,"ultramarine blue (pb 29), bone black (pbk 9), ultramarine violet (pv 15)"
+310,payne‚Äôs gray,1,3.62pb,2.36,0.31,i,o,m,"ultramarine blue (pb 29), bone black (pbk 9), ultramarine violet (pv 15)"
 316,phthalocyanine blue,1A,0.14p,2.37,4.6,i,tp,s,copper phthalocyanine (pb 15) (green shade)
 314,phthalocyanine blue,2,9.03 bp,2.27,4.09,i,tp,s,phthalocyanine blue epsilon (pb15:6) (red shade)
 317,phthalocyanine green,1A,9.88bg,2.57,2.23,i,tp,s,chlorinated copper phthalocyanine (pg 7) (blue shade)
@@ -79,14 +79,14 @@
 331,raw umber,1,9.38yr,2.91,1.11,i,o,s,natural iron oxide containing manganese (pbr 7)
 335,red oxide,1A,9.01r,4,7.47,i,o,s,synthetic red iron oxide (pr 101)
 315,sap green permanent,2,8.48 gy,2.9,2.06,i,tl,m,"isoindolinone (py 139), phthalocyanine blue (pb 15:3), synthetic iron oxide black (pbk 11)"
-432,titanium white,1,ó,ó,ó,i,o,s,titanium dioxide (pw6)
+432,titanium white,1,‚Äî,‚Äî,‚Äî,i,o,s,titanium dioxide (pw6)
 129,transparent burnt sienna,3,7.33 r,3.12,2.75,i,tp,s,synthetic iron oxide red (pr 101)
 130,transparent burnt umber,2,6.35 yr,2.72,0.19,i,tp,m,"synthetic iron oxide yellow (py 42), synthetic iron oxide red (pr 101), synthetic iron oxide black (pbk 11)"
 430,transparent mixing white,1,2.52pb,9,0.71,i,tp,s,zinc white (pw4)
 332,transparent raw sienna,3,6.70 yr,4.68,5.49,i,tp,s,synthetic iron oxide yellow (py 42)
 333,transparent raw umber,2,4.28 yr,2.81,0.17,i,tp,m,"synthetic iron oxide yellow (py 42), synthetic iron oxide red (pr 101), synthetic iron oxide black (pbk 11)"
 327,transparent viridian hue,2,6.78 bg 2.72,,2.72,i,tl,s,chlorinated copper phthalocyanine (pg 7)
-730,turnerís yellow,2,2.08y,7.04,9.89,ii,tl,m,"Arylide yellow 10g (py 3), iron oxide yellow (py 42)"
+730,turner‚Äôs yellow,2,2.08y,7.04,9.89,ii,tl,m,"Arylide yellow 10g (py 3), iron oxide yellow (py 42)"
 561,turquoise deep,2,6.66pb,2.38,2.2,i,tl,m,"copper phthalocyanine (pb 15:3), chlorinated copper phthalocyanine (pg 7)"
 380,ultramarine blue (green shade),1A,9.32 pb,2.28,7.29,i,tl,s,complex silicate of sodium and Aluminum with sulfur (pb 29)
 382,ultramarine blue (red shade),1A,9.4bp,2,8,i,o,s,complex silicate of sodium and Aluminum with sulfur (pb 29)

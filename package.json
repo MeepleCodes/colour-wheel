@@ -20,6 +20,7 @@
     "color-calculus": "^0.2.1",
     "color-convert": "^2.0.1",
     "loglevel": "^1.8.0",
+    "munsell": "^1.0.8",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router": "^6.4.2",

@@ -18,13 +18,14 @@ import { uniqueHues } from './colours/UniqueHues';
 import { Palette } from './colours/Colours';
 import { NavigateFunction, Params, useNavigate, useParams } from 'react-router';
 import { useSearchParams } from 'react-router-dom';
+import { LiquitexAcrylicGouacheSet } from './colours/LiquitexPalettes';
 
 
 const noSwatchSet: Palette = {
     name: "None",
     colours: []
 };
-const ALL_SWATCHESETS = [noSwatchSet, goldenFluidAcrylicSetThick, goldenFluidAcrylicSetThin, goldenHeavyBodyModernMixingSetThick, goldenHeavyBodyModernMixingSetThin, uniqueHues];
+const ALL_SWATCHESETS = [noSwatchSet, goldenFluidAcrylicSetThick, goldenFluidAcrylicSetThin, goldenHeavyBodyModernMixingSetThick, goldenHeavyBodyModernMixingSetThin, LiquitexAcrylicGouacheSet, uniqueHues];
 function getSwatchSetByName(name?: string) {
     // Somewhat clunky way of doing array.get(index, default)
     return [...ALL_SWATCHESETS.filter(s => s.name === name), noSwatchSet][0];
